@@ -229,6 +229,7 @@ body.night #sheet .in{background:#14231D;color:#EDE6D3}
 <div id="sheet" onclick="if(event.target===this)closeSheet()"><div class="in" id="sheetin"></div></div>
 <div class="toast" id="toast"></div>
 <input type="file" id="cam" accept="image/*" capture="environment" style="display:none" onchange="sendPhoto(this)">
+<input type="file" id="cam2" accept="image/*" capture="environment" style="display:none" onchange="sendPhoto(this,'repas')">
 
 <script>
 /* ============ Icônes ============ */
@@ -269,17 +270,21 @@ const dur=min=>{min=Math.round(min);const h=Math.floor(min/60),m=min%60;return h
 /* ============ Données ============ */
 let D=null; // data.json, écrit par Claude
 let S=load(); // ton état, sur l'appareil (et sur GitHub si réglé)
-function load(){try{const s=JSON.parse(localStorage.getItem(DEMO?'bm-demo':'bm-state'));if(s)return s}catch(e){}return {checks:{},logs:{},golf:[],evals:{},props:{},inbox:[],settings:{theme:'auto'},updatedAt:0}}
+S.repas=S.repas||[];
+function load(){try{const s=JSON.parse(localStorage.getItem(DEMO?'bm-demo':'bm-state'));if(s)return s}catch(e){}return {checks:{},logs:{},golf:[],evals:{},props:{},inbox:[],repas:[],settings:{theme:'auto'},updatedAt:0}}
 function save(){S.updatedAt=Date.now();try{localStorage.setItem(DEMO?'bm-demo':'bm-state',JSON.stringify(S))}catch(e){}queuePush()}
 let GA=null; // garmin.json (tâche GitHub)
+let HIST={}; // garmin-historique.json
 async function ghRaw(path){const s=S.settings;const r=await fetch(`https://api.github.com/repos/${s.repo}/contents/${path}?t=${Date.now()}`,{headers:{Authorization:'Bearer '+s.token,Accept:'application/vnd.github.raw+json'},cache:'no-store'});if(!r.ok)throw new Error('gh '+r.status);return r.json()}
 async function loadData(){
   if(!DEMO&&S.settings.token&&S.settings.repo){
     try{D=await ghRaw('data.json');localStorage.setItem('bm-data',JSON.stringify(D))}catch(e){try{D=JSON.parse(localStorage.getItem('bm-data'))}catch(_){}}
     try{GA=await ghRaw('garmin.json');localStorage.setItem('bm-garmin',JSON.stringify(GA))}catch(e){try{GA=JSON.parse(localStorage.getItem('bm-garmin'))}catch(_){}}
+    try{HIST=await ghRaw('garmin-historique.json');localStorage.setItem('bm-hist',JSON.stringify(HIST))}catch(e){try{HIST=JSON.parse(localStorage.getItem('bm-hist'))||{}}catch(_){}}
     D=D||{};return;
   }
   try{const r=await fetch((DEMO?'demo.json':'data.json')+'?v='+Date.now());D=await r.json()}catch(e){D=D||{}}
+  if(DEMO){GA=D.garmin||null;HIST=D.historique||{}}
   if(DEMO&&D.demoState&&!S._seeded){S=Object.assign(S,D.demoState);S._seeded=1;save()}
 }
 
@@ -328,6 +333,7 @@ const PLAN_DEFAUT={
  golfPerte:['Énervement après un bogey','Pensé au score','Trop vite sur le tee','Fatigue','Peur du hors-limite','Perdu ma routine'],
  golfOk:['Routine respectée','Bon putting','Resté calme','Bonne stratégie','Bon tempo'],
  domaines:['Sommeil','Salle','Golf','Mental','École'],
+ sommeilCible:480,
 };
 const P=()=>Object.assign({},PLAN_DEFAUT,(D&&D.plan)||{});
 
@@ -391,9 +397,12 @@ function vToday(){
   </div>
   <div class="grid g3">
     <div class="col">
-      <div class="card"><div class="lab">Forme du jour</div>
-        <div style="display:flex;align-items:center;gap:16px;margin-top:10px">${ring(F?F.score/100:0,F?F.score:'—',104,'#C9A45C')}
-        <div style="font-size:14px;line-height:1.75">${F?`Sommeil <b>${esc(F.sommeil)}</b><br>VFC <b>${esc(F.vfc)}</b><br>Body Battery <b>${esc(F.bb)}</b>`:'<span class="mut">En attente de ta montre.<br>Synchronise ta Garmin.</span>'}</div></div>
+      <div class="card" onclick="openHist('sommeilMin')" style="cursor:pointer"><div style="display:flex;justify-content:space-between"><span class="lab">Ton corps</span><span class="mut" style="font-size:12px">toucher → historique</span></div>
+        <div style="display:flex;align-items:center;gap:14px;margin-top:10px">${ring(F?F.score/100:0,F?F.score:'—',96,'#C9A45C')}
+        <div style="font-size:14px;line-height:1.7"><span class="lab" style="font-size:10.5px">Récupération</span><br>${F?`Sommeil <b>${esc(F.sommeil)}</b><br>VFC <b>${esc(F.vfc)}</b> · BB <b>${esc(F.bb)}</b>`:'<span class="mut">En attente de ta montre.<br>Touche ↻ en haut.</span>'}</div></div>
+        ${(()=>{const e=effort(),bq=banque();return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
+          <div style="background:var(--card2);border-radius:16px;padding:12px"><div class="lab" style="font-size:10.5px">Banque de sommeil</div><div class="serif" style="font-size:24px;margin-top:4px;color:${bq&&bq.b<0?'var(--orange)':'var(--g2)'}">${bq?signDur(bq.b):'—'}</div><div class="mut" style="font-size:11.5px">${bq?`${bq.n} nuits · cible ${dur(P().sommeilCible)}`:'7 nuits'}</div></div>
+          <div style="background:var(--card2);border-radius:16px;padding:12px"><div class="lab" style="font-size:10.5px">Effort d'hier</div><div class="serif" style="font-size:24px;margin-top:4px;color:var(--g)">${e?e.score:'—'}<span style="font-size:14px">/100</span></div><div class="mut" style="font-size:11.5px">${e?`${e.vig} min intenses · ${e.sets} séries`:'séances + montre'}</div></div></div>`})()}
         ${F&&F.conseil?`<div style="margin-top:12px;font-size:14px;color:var(--g2);font-weight:600">${esc(F.conseil)}</div>`:''}</div>
       <div class="card"><div class="lab">Échéances</div>${ech.length?ech.slice(0,5).map(e=>`<div class="jx"><span>${esc(e.nom)}</span><b class="${e.j<=2?'hot':''}">${e.j===0?'Auj.':'J-'+e.j}</b></div>`).join(''):'<div class="empty">Envoie ton journal de classe : Claude ajoutera tes interros ici.</div>'}
         <button class="btn o" style="margin-top:12px;width:100%" onclick="document.getElementById('cam').click()">${I.cam.replace('#E6CF9A','currentColor')} Journal de classe</button></div>
@@ -413,12 +422,23 @@ function vToday(){
         ${coach.length?coach.map((m,i)=>`<div class="msg"><div class="who"><i class="av"></i>Claude · ${esc(m.heure||'')}</div>${esc(m.texte)}${m.choix?`<div class="acts">${m.choix.map((c,j)=>`<button class="btn ${S.props['c'+i]===j?'':'o'}" onclick="pick('c${i}',${j})">${esc(c)}</button>`).join('')}</div>`:''}</div>`).join(''):'<div class="empty">Claude t\'écrit ici à 6h40, 12h00 et 21h00.</div>'}
         <button class="btn full" style="margin-top:14px" onclick="askClaude()">${I.chat} Parler à Claude</button>
       </div>
+      ${(()=>{const N=nutrition();const brule=GA&&GA.date===K(d)?GA.kcalTotal:null;return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline"><span class="lab">Repas & calories</span><span class="mut" style="font-size:12px">${N.R.length} repas</span></div>
+        <div style="display:flex;align-items:baseline;gap:8px;margin-top:8px"><span class="big" style="font-size:36px">${N.kcal}</span><span class="mut">${N.obj?'/ '+N.obj+' kcal':'kcal'}</span></div>
+        ${N.obj?`<div class="bar" style="margin-top:8px"><i style="width:${Math.min(100,N.kcal/N.obj*100)}%"></i></div>`:''}
+        <div class="mut" style="font-size:13px;margin-top:8px">Protéines <b>${N.prot} g</b>${N.objProt?' / '+N.objProt+' g':''}${brule?` · dépensé <b>${brule} kcal</b>`:''}</div>
+        ${N.R.slice(-3).map(r=>`<div class="jx"><span>${esc(r.nom||'Repas')}${r.attente?' <span class="mut">(Claude analyse…)</span>':''}</span><b style="font-size:16px">${r.kcal||'…'}</b></div>`).join('')}
+        <div style="display:flex;gap:8px;margin-top:12px"><button class="btn o" style="flex:1" onclick="document.getElementById('cam2').click()">${I.cam.replace('#E6CF9A','currentColor')} Photo</button><button class="btn o" style="flex:1" onclick="addRepas()">+ Ajouter</button></div></div>`})()}
       <div class="card dark"><div class="lab">Le mot du coach mental</div><div class="serif" style="font-size:19px;line-height:1.45;margin-top:10px">« ${esc((D&&D.mental)||'Une cible, un swing. Le score viendra tout seul.')} »</div></div>
       ${(D&&D.golf&&D.golf.prochain)?`<div class="card"><div class="lab">Golf</div><div class="serif" style="font-size:22px;color:var(--g);margin-top:8px">${esc(D.golf.prochain)}</div><div class="mut" style="font-size:13.5px;margin-top:4px">${esc(D.golf.travail||'')}</div></div>`:''}
     </div>
   </div>`;
 }
 function formeGarmin(d){if(!GA||GA.date!==K(d))return null;const sc=GA.sommeilScore,bb=GA.bodyBatteryMax;const parts=[sc,bb].filter(x=>typeof x==='number');if(!parts.length)return null;const score=Math.round(parts.reduce((a,b)=>a+b,0)/parts.length);return {score,sommeil:GA.sommeil||'—',vfc:GA.vfc?GA.vfc+' ms':'—',bb:bb??'—',conseil:score>=75?'Bonne récup : séance normale.':score>=55?'Récup moyenne : écoute ton corps.':'Récup basse : allège la séance.'}}
+function banque(){const c=P().sommeilCible;let L=[];for(let i=6;i>=0;i--){const k=K(addD(NOW(),-i));const h=HIST[k];if(h&&h.sommeilMin)L.push(h.sommeilMin)}if(L.length<3&&GA&&GA.semaine)L=GA.semaine.map(x=>x.min);if(!L.length)return null;const b=L.reduce((a,x)=>a+(x-c),0);return {b,n:L.length}}
+const signDur=m=>(m<0?'−':'+')+dur(Math.abs(m));
+function effort(){const h=GA&&GA.hier;let setsH=0;const y=K(addD(NOW(),-1));for(const k in S.logs)setsH+=S.logs[k].filter(x=>x.d===y).length;if(!h&&!setsH)return null;const mod=(h&&h.minModerees)||0,vig=(h&&h.minIntenses)||0;return {score:Math.min(100,Math.round((mod+2*vig)/1.4+setsH*2)),mod,vig,sets:setsH,kcal:h&&h.kcalTotal}}
+function repasDuJour(){const k=K(NOW());return [].concat(((D&&D.repas)||[]).filter(r=>r.date===k),S.repas.filter(r=>r.date===k))}
+function nutrition(){const R=repasDuJour();const kcal=R.reduce((a,r)=>a+(+r.kcal||0),0),prot=R.reduce((a,r)=>a+(+r.prot||0),0);const o=(D&&D.nutrition)||{};return {R,kcal,prot,obj:o.objectif||null,objProt:o.proteines||null}}
 async function refreshAll(){
   const b=document.getElementById('rfbtn');b.classList.add('spin');
   const s=S.settings;
@@ -589,6 +609,20 @@ function openSettings(){
    <div style="display:flex;gap:8px;margin-top:22px;flex-wrap:wrap"><button class="btn o" onclick="exportS()">Exporter mes données</button><button class="btn o" onclick="closeSheet()">Fermer</button></div>`;
   document.getElementById('sheet').classList.add('on');
 }
+function addRepas(){document.getElementById('sheetin').innerHTML=`<h2 style="color:inherit">Ajouter un repas</h2>
+ <label>Quoi ?</label><input id="r_nom" placeholder="ex. pâtes poulet, shake whey">
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><label>Calories</label><input id="r_kcal" type="number" inputmode="numeric" placeholder="650"></div><div><label>Protéines (g)</label><input id="r_prot" type="number" inputmode="numeric" placeholder="40"></div></div>
+ <div class="chips" style="margin-top:14px">${[['Shake whey',130,25],['Œufs ×3',220,19],['Poulet riz',650,45],['Pâtes bolo',750,35],['Skyr',120,18]].map(x=>`<span class="chip" onclick="r_nom.value='${x[0]}';r_kcal.value=${x[1]};r_prot.value=${x[2]}">${x[0]}</span>`).join('')}</div>
+ <div class="mut" style="font-size:13px;margin-top:10px">Tu ne sais pas les calories ? Laisse vide : Claude estimera.</div>
+ <button class="btn full" style="margin-top:16px" onclick="S.repas.push({date:K(NOW()),heure:hm(NOW()),nom:r_nom.value||'Repas',kcal:+r_kcal.value||0,prot:+r_prot.value||0,attente:!r_kcal.value});save();closeSheet();render();toast('Repas ajouté')">Ajouter</button>`;document.getElementById('sheet').classList.add('on')}
+const fmtD=k=>{const d=new Date(k+'T12:00:00');return JOURS[wd(d)]+' '+d.getDate()+' '+MOIS[d.getMonth()].slice(0,4)+'.'};
+const MET={sommeilMin:['Sommeil',v=>dur(v)],sommeilScore:['Score de sommeil',v=>v],vfc:['VFC (ms)',v=>v+' ms'],bodyBatteryMax:['Body Battery',v=>v],fcRepos:['FC au repos',v=>v+' bpm'],pas:['Pas',v=>v],kcalTotal:['Calories dépensées',v=>v+' kcal']};
+function openHist(m){const keys=Object.keys(HIST).sort().slice(-30);const pts=keys.map(k=>({k,v:HIST[k]&&HIST[k][m]})).filter(x=>typeof x.v==='number');
+ const W=520,H=200;let svg='<div class="empty">L\'historique se remplit chaque matin avec ta montre.</div>';
+ if(pts.length>1){const mx=Math.max(...pts.map(p=>p.v)),mn=Math.min(...pts.map(p=>p.v));const X=i=>i*W/(pts.length-1),Y=v=>H-14-(v-mn)/(mx-mn||1)*(H-34);
+  svg=`<div style="position:relative"><svg id="hs" viewBox="0 0 ${W} ${H}" style="width:100%;height:220px;touch-action:none" preserveAspectRatio="none"><polyline fill="none" stroke="#C9A45C" stroke-width="3" vector-effect="non-scaling-stroke" stroke-linejoin="round" points="${pts.map((p,i)=>X(i)+','+Y(p.v)).join(' ')}"/><line id="hl" x1="0" x2="0" y1="0" y2="${H}" stroke="#1F5C45" stroke-width="1.5" vector-effect="non-scaling-stroke" style="display:none"/></svg><div id="hv" class="serif" style="font-size:28px;margin-top:6px">${MET[m][1](pts[pts.length-1].v)}</div><div id="hd" class="mut" style="font-size:13px">${fmtD(pts[pts.length-1].k)} · glisse le doigt sur la courbe</div></div>`;
+  setTimeout(()=>{const el=document.getElementById('hs');const mv=e=>{const r=el.getBoundingClientRect();const x=((e.touches?e.touches[0].clientX:e.clientX)-r.left)/r.width;const i=Math.max(0,Math.min(pts.length-1,Math.round(x*(pts.length-1))));const l=document.getElementById('hl');l.style.display='';l.setAttribute('x1',X(i));l.setAttribute('x2',X(i));document.getElementById('hv').textContent=MET[m][1](pts[i].v);document.getElementById('hd').textContent=fmtD(pts[i].k);buzz()};el.addEventListener('pointermove',mv);el.addEventListener('pointerdown',mv)},50)}
+ document.getElementById('sheetin').innerHTML=`<h2 style="color:inherit">${MET[m][0]} · 30 jours</h2><div class="chips" style="margin:12px 0">${Object.keys(MET).map(x=>`<span class="chip ${x===m?'on':''}" onclick="openHist('${x}')">${MET[x][0]}</span>`).join('')}</div>${svg}<button class="btn o full" style="margin-top:16px" onclick="closeSheet()">Fermer</button>`;document.getElementById('sheet').classList.add('on')}
 function closeSheet(){document.getElementById('sheet').classList.remove('on')}
 function refresh(){loadData().then(()=>{render();toast('Briefing rechargé')})}
 function exportS(){const b=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='build-me-'+K(NOW())+'.json';a.click()}
@@ -599,7 +633,7 @@ let PT=null;function queuePush(){if(DEMO||!S.settings.token)return;clearTimeout(
 async function push(){try{const copy=Object.assign({},S,{settings:{theme:S.settings.theme}});await putFile('state.json',b64(JSON.stringify(copy)),'Build Me : mise à jour');S.settings.lastSync=Date.now();localStorage.setItem('bm-state',JSON.stringify(S))}catch(e){}}
 async function pull(show){try{const f=await gh('state.json');if(f&&f.content){const r=JSON.parse(decodeURIComponent(escape(atob(f.content.replace(/\n/g,'')))));if((r.updatedAt||0)>(S.updatedAt||0)){const keep=S.settings;S=Object.assign(r,{settings:keep})}}await push();show&&toast('Synchronisé');render()}catch(e){show&&toast(e.message==='nogh'?'Ajoute le dépôt et la clé':'Synchro impossible pour l\'instant')}}
 async function sendNote(){const t=document.getElementById('s_note').value.trim();if(!t)return;S.inbox.push({d:new Date().toISOString(),type:'note',texte:t});save();try{await putFile(`inbox/${Date.now()}.txt`,b64(t),'Note pour Claude');toast('Envoyé à Claude')}catch(e){toast('Gardé, envoyé à la prochaine synchro')}closeSheet()}
-function sendPhoto(inp){const f=inp.files[0];if(!f)return;const img=new Image();const rd=new FileReader();rd.onload=()=>{img.onload=async()=>{const c=document.createElement('canvas');const sc=Math.min(1,1600/Math.max(img.width,img.height));c.width=img.width*sc;c.height=img.height*sc;c.getContext('2d').drawImage(img,0,0,c.width,c.height);const data=c.toDataURL('image/jpeg',.8).split(',')[1];try{await putFile(`inbox/journal-${K(NOW())}-${Date.now()}.jpg`,data,'Journal de classe');toast('Journal envoyé à Claude')}catch(e){toast(e.message==='nogh'?'Règle GitHub d\'abord (⚙︎)':'Envoi raté, réessaie')}};img.src=rd.result};rd.readAsDataURL(f);inp.value=''}
+function sendPhoto(inp,kind){const f=inp.files[0];if(!f)return;const img=new Image();const rd=new FileReader();rd.onload=()=>{img.onload=async()=>{const c=document.createElement('canvas');const sc=Math.min(1,1600/Math.max(img.width,img.height));c.width=img.width*sc;c.height=img.height*sc;c.getContext('2d').drawImage(img,0,0,c.width,c.height);const data=c.toDataURL('image/jpeg',.8).split(',')[1];try{const nm=kind==='repas'?'repas':'journal';await putFile(`inbox/${nm}-${K(NOW())}-${Date.now()}.jpg`,data,kind==='repas'?'Photo de repas':'Journal de classe');if(kind==='repas'){S.repas.push({date:K(NOW()),heure:hm(NOW()),nom:'Photo de repas',attente:1});save();render()}toast(kind==='repas'?'Repas envoyé : Claude compte les calories':'Journal envoyé à Claude')}catch(e){toast(e.message==='nogh'?'Règle GitHub d\'abord (⚙︎)':'Envoi raté, réessaie')}};img.src=rd.result};rd.readAsDataURL(f);inp.value=''}
 
 /* ============ Démarrage ============ */
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
