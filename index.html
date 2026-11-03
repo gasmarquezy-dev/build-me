@@ -82,6 +82,17 @@ body.night .tab.on{background:var(--gold);color:#0F3B2E}
 .done .chk,.chk.y{background:var(--g2);border-color:var(--g2)}
 .done .chk:after,.chk.y:after{content:"";position:absolute;left:9.5px;top:5px;width:8px;height:14px;border:solid #fff;border-width:0 3px 3px 0;transform:rotate(45deg)}
 .nm{font-weight:500;font-size:15.5px}
+.pl{position:relative;display:flex;gap:11px;padding:11px 12px;border-radius:15px;background:var(--card2);margin-top:7px;align-items:flex-start}
+.pl.mini{background:none;padding:6px 12px;margin-top:2px}
+.pl.past{opacity:.5}.pl.now{outline:2.5px solid var(--gold);outline-offset:-2px;opacity:1}
+.pl .h{width:48px;flex:none;font-size:13.5px;font-weight:600;color:var(--g2);padding-top:2px;font-variant-numeric:tabular-nums}
+.pl{flex-wrap:wrap}.pl .b{flex:1;min-width:0}.pl .c{flex:0 0 100%;min-width:0}
+.pl .chk{width:28px;height:28px}.pl .chk:after{left:8px;top:4px}
+.sub{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid rgba(120,140,130,.22)}
+.sub:first-of-type{margin-top:8px}.sub .t{flex:1;min-width:0;font-size:15px}.sub.done .t{text-decoration:line-through;opacity:.6}
+.sub .chk{width:26px;height:26px}.sub .chk:after{left:7.5px;top:3.5px;width:7px;height:12px}
+.sub a.yt{width:44px;height:32px}
+.star{color:#A9832F;font-size:11.5px;font-weight:700;margin-left:6px}
 .meta{font-size:12.5px;color:var(--mut);margin-top:2px}
 .pill{margin-left:auto;font-size:12px;font-weight:600;padding:6px 10px;border-radius:999px;background:rgba(201,164,92,.18);color:#8A6A2C;white-space:nowrap}
 body.night .pill{color:var(--gold2)}
@@ -273,6 +284,7 @@ let S=load(); // ton état, sur l'appareil (et sur GitHub si réglé)
 S.repas=S.repas||[];
 function load(){try{const s=JSON.parse(localStorage.getItem(DEMO?'bm-demo':'bm-state'));if(s)return s}catch(e){}return {checks:{},logs:{},golf:[],evals:{},props:{},inbox:[],repas:[],settings:{theme:'auto'},updatedAt:0}}
 function save(){S.updatedAt=Date.now();try{localStorage.setItem(DEMO?'bm-demo':'bm-state',JSON.stringify(S))}catch(e){}queuePush()}
+let PL=null; // planning.json (copie de l'agenda)
 let GA=null; // garmin.json (tâche GitHub)
 let HIST={}; // garmin-historique.json
 async function ghRaw(path){const s=S.settings;const r=await fetch(`https://api.github.com/repos/${s.repo}/contents/${path}?t=${Date.now()}`,{headers:{Authorization:'Bearer '+s.token,Accept:'application/vnd.github.raw+json'},cache:'no-store'});if(!r.ok)throw new Error('gh '+r.status);return r.json()}
@@ -281,6 +293,7 @@ async function loadData(){
     try{D=await ghRaw('data.json');localStorage.setItem('bm-data',JSON.stringify(D))}catch(e){try{D=JSON.parse(localStorage.getItem('bm-data'))}catch(_){}}
     try{GA=await ghRaw('garmin.json');localStorage.setItem('bm-garmin',JSON.stringify(GA))}catch(e){try{GA=JSON.parse(localStorage.getItem('bm-garmin'))}catch(_){}}
     try{HIST=await ghRaw('garmin-historique.json');localStorage.setItem('bm-hist',JSON.stringify(HIST))}catch(e){try{HIST=JSON.parse(localStorage.getItem('bm-hist'))||{}}catch(_){}}
+    try{PL=await ghRaw('planning.json');localStorage.setItem('bm-planning',JSON.stringify(PL))}catch(e){try{PL=JSON.parse(localStorage.getItem('bm-planning'))}catch(_){}}
     D=D||{};return;
   }
   try{const r=await fetch((DEMO?'demo.json':'data.json')+'?v='+Date.now());D=await r.json()}catch(e){D=D||{}}
@@ -292,42 +305,98 @@ async function loadData(){
 const PLAN_DEFAUT={
  maison:{ref:'2026-11-02',refChez:'papa',papa:{depart:'7h30',reveil:'6h30'},maman:{depart:'8h15',reveil:'7h00'}},
  habitudes:[
-  {id:'corde',moment:'matin',nom:'Corde fractionné',detail:'10 min · 30 s on / 30 s off',jours:[0,1,2,3,4],yt:'corde à sauter fractionné débutant'},
-  {id:'mobilite',moment:'matin',nom:'Mobilité + gainage rotationnel',detail:'rotations thoraciques, Pallof press',jours:[0,1,2,3,4],yt:'golf mobility routine rotation'},
-  {id:'sophro',moment:'matin',nom:'Sophrologie',detail:'7 min',jours:[0,1,2,3,4,5,6]},
+  {id:'corde',moment:'matin',nom:'Corde à sauter',detail:'8 min',jours:[0,1,2,3,4]},
+  {id:'mobilite',moment:'matin',nom:'Mobilité golf',detail:'6 min, sans pause',jours:[0,1,2,3,4]},
   {id:'perso',moment:'matin',nom:'1 h de temps perso',detail:'étudier ou autre',jours:[0,1,2,3,4,5,6]},
   {id:'prepa',moment:'jour',nom:'Prépas en fourche',detail:'tôt dans la journée',jours:[0,1,2,3,4]},
-  {id:'salle',moment:'jour',nom:'Salle',detail:'18h',jours:[0,1,3,4]},
-  {id:'golf',moment:'jour',nom:'Travail golf',detail:'contenu : ton coach',jours:[2,4,5]},
-  {id:'etir',moment:'soir',nom:'3 étirements',detail:'pigeon · ischios · ouverture thoracique',jours:[0,1,2,3,4,5,6],yt:'pigeon stretch hamstring thoracic opener'},
-  {id:'lecture',moment:'soir',nom:'Lecture',detail:'avant de dormir',jours:[0,1,2,3,4,5,6]},
-  {id:'ecrans',moment:'soir',nom:'Écrans off',detail:'21h45',jours:[0,1,2,3,4,5,6]},
-  {id:'lumiere',moment:'soir',nom:'Lumière éteinte',detail:'22h15',jours:[0,1,2,3,4,5,6]},
+  {id:'salle',moment:'jour',nom:'Salle',detail:'',jours:[0,1,3,4]},
+  {id:'golf',moment:'jour',nom:'Travail golf',detail:'contenu : ton coach',jours:[2,5]},
+  {id:'ecrans',moment:'soir',nom:'Téléphone coupé',detail:'hors de la chambre',jours:[0,1,2,3,4,5,6]},
+  {id:'sophro',moment:'soir',nom:'Sophrologie',detail:'7 min',jours:[0,1,2,3,4,5,6]},
+  {id:'etir',moment:'soir',nom:'Étirements',detail:'12 min · 1 min / côté',jours:[0,1,2,3,4,5,6]},
+  {id:'lecture',moment:'soir',nom:'Lecture',detail:'15 min',jours:[0,1,2,3,4,5,6]},
+  {id:'lumiere',moment:'soir',nom:'Lumière éteinte',detail:'',jours:[0,1,2,3,4,5,6]},
+ ],
+ routineMatin:[
+  {cle:'corde',nom:'Corde à sauter',detail:'8 min · lun mer ven : feu · mar jeu : défi',yt:'corde à sauter débutant technique',hab:'corde'},
+  {cle:'pogo',nom:'Pogo jumps',detail:'2 × 10 · repos 30 s',yt:'pogo jumps technique'},
+  {cle:'wgs',nom:"World's greatest stretch",detail:'4 / côté',yt:'worlds greatest stretch',hab:'mobilite'},
+  {cle:'book',nom:'Open book',detail:'6 / côté',yt:'open book thoracic rotation',hab:'mobilite'},
+  {cle:'9090',nom:'90/90',detail:'10 changements',yt:'90 90 hip switch',hab:'mobilite'},
+  {cle:'chat',nom:'Chat-vache',detail:'8 lentes',yt:'cat cow stretch',hab:'mobilite'},
+  {cle:'deadbug',nom:'Dead bug',detail:'8 / côté',yt:'dead bug exercise',hab:'mobilite'},
+ ],
+ etirements:[
+  {cle:'psoas',nom:'Fente à genou (psoas)',detail:'1 min / côté',yt:'half kneeling hip flexor stretch',top:1},
+  {cle:'fig4',nom:'Figure 4 couché',detail:'1 min / côté',yt:'figure 4 stretch lying',top:1},
+  {cle:'ischio',nom:'Ischios avec serviette',detail:'1 min / côté',yt:'lying hamstring stretch towel'},
+  {cle:'torsion',nom:'Torsion couché',detail:'1 min / côté',yt:'supine spinal twist',top:1},
+  {cle:'book',nom:'Open book',detail:'8 / côté',yt:'open book thoracic rotation'},
+  {cle:'pecs',nom:'Pecs au cadre de porte',detail:'1 min / côté',yt:'doorway chest stretch'},
+ ],
+ mobiliteLongue:[
+  {cle:'yoga',nom:'Yoga pour golfeurs',detail:'30 min · toujours la même vidéo',yt:'yoga for golfers 30 minutes'},
+ ],
+ activation:[
+  {cle:'velo',nom:'Corde ou vélo',detail:'2 min',yt:'jump rope warm up'},
+  {cle:'9090',nom:'90/90',detail:'6 changements',yt:'90 90 hip switch'},
+  {cle:'rot',nom:'Rotation thoracique à 4 pattes',detail:'6 / côté',yt:'quadruped thoracic rotation'},
+  {cle:'cars',nom:'Hip CARs debout',detail:'3 / côté',yt:'standing hip CARs'},
+  {cle:'pont',nom:'Pont fessier avec élastique',detail:'10',yt:'banded glute bridge'},
+  {cle:'sauts',nom:'Sauts verticaux max',detail:'3',yt:'vertical jump technique'},
+ ],
+ finSalle:[
+  {cle:'9090',nom:'90/90 tenu',detail:'45 s / côté',yt:'90 90 hip stretch'},
+  {cle:'dorsal',nom:'Grand dorsal sur banc',detail:'45 s',yt:'bench lat stretch'},
+  {cle:'book',nom:'Open book',detail:'6 / côté',yt:'open book thoracic rotation'},
  ],
  seances:{
-  0:{nom:'Bas du corps + vitesse',ex:[
-    {id:'squat',nom:'Squat arrière',series:4,reps:'6',repos:150,yt:'back squat technique'},
-    {id:'trapjump',nom:'Saut avec trap bar',series:4,reps:'4',repos:120,yt:'trap bar jump'},
-    {id:'rdl',nom:'Soulevé de terre roumain',series:3,reps:'8',repos:120,yt:'romanian deadlift form'},
-    {id:'fente',nom:'Fente bulgare',series:3,reps:'8 / jambe',repos:90,yt:'bulgarian split squat'},
-    {id:'pallof',nom:'Pallof press',series:3,reps:'10 / côté',repos:60,yt:'pallof press'}]},
-  1:{nom:'Haut du corps',ex:[
-    {id:'dc',nom:'Développé couché',series:4,reps:'6',repos:150,yt:'bench press technique'},
-    {id:'traction',nom:'Tractions lestées',series:4,reps:'6',repos:150,yt:'weighted pull ups'},
-    {id:'mbrot',nom:'Lancer médecine-ball rotatif',series:4,reps:'5 / côté',repos:90,yt:'rotational medicine ball throw golf'},
-    {id:'rowh',nom:'Rowing haltère',series:3,reps:'10',repos:90,yt:'dumbbell row'},
-    {id:'dmilit',nom:'Développé militaire haltères',series:3,reps:'8',repos:90,yt:'dumbbell shoulder press'},
-    {id:'face',nom:'Face pull',series:3,reps:'15',repos:60,yt:'face pull'}]},
-  3:{nom:'Puissance rotation',ex:[
-    {id:'hipthrust',nom:'Hip thrust',series:4,reps:'8',repos:120,yt:'hip thrust'},
-    {id:'landmine',nom:'Landmine rotation',series:4,reps:'6 / côté',repos:90,yt:'landmine rotation golf'},
-    {id:'mbslam',nom:'Médecine-ball slam',series:4,reps:'6',repos:60,yt:'medicine ball slam'},
-    {id:'copenhague',nom:'Gainage Copenhague',series:3,reps:'20 s / côté',repos:60,yt:'copenhagen plank'}]},
-  4:{nom:'Full body',ex:[
-    {id:'deadlift',nom:'Soulevé de terre',series:4,reps:'5',repos:180,yt:'deadlift technique'},
-    {id:'dcincl',nom:'Développé incliné haltères',series:3,reps:'8',repos:120,yt:'incline dumbbell press'},
-    {id:'tirage',nom:'Tirage vertical',series:3,reps:'10',repos:90,yt:'lat pulldown'},
-    {id:'farmer',nom:'Marche du fermier',series:3,reps:'30 m',repos:90,yt:'farmer carry'}]},
+  0:{nom:'Salle A · Jambes',heure:'18h00',ex:[
+   {id:'a_mb',nom:'Lancers médecine-ball au mur',series:4,reps:'5 / côté',repos:120,yt:'med ball rotational throw golf',note:'100 %',groupe:'ess'},
+   {id:'a_saut',nom:'Saut en longueur sans élan',series:3,reps:'4',repos:120,yt:'standing broad jump',note:'100 %',groupe:'ess'},
+   {id:'a_squat',nom:'Squat barre',series:4,reps:'5-6',repos:180,yt:'back squat form',note:'contraste : 3 sauts max après 20 s',groupe:'ess'},
+   {id:'a_rdl',nom:'Soulevé de terre roumain',series:3,reps:'6-8',repos:150,yt:'romanian deadlift form',groupe:'ess'},
+   {id:'a_nordic',nom:'Nordic curl',series:3,reps:'4',repos:120,yt:'nordic curl beginner',note:'descends en 4 s',groupe:'ess'},
+   {id:'a_fente',nom:'Fentes bulgares',series:3,reps:'8 / jambe',repos:90,yt:'bulgarian split squat',groupe:'reste'},
+   {id:'a_presse',nom:'Presse à cuisses',series:3,reps:'10-12',repos:120,yt:'leg press form',groupe:'reste'},
+   {id:'a_legcurl',nom:'Leg curl',series:3,reps:'10-12',repos:90,yt:'leg curl machine',groupe:'reste'},
+   {id:'a_mollet',nom:'Mollets debout',series:3,reps:'12-15',repos:60,yt:'standing calf raise',groupe:'reste'},
+   {id:'a_copen',nom:'Copenhagen plank',series:2,reps:'20 s / côté',repos:45,yt:'copenhagen plank',groupe:'reste'},
+   {id:'a_pallof',nom:'Pallof press',series:3,reps:'10 / côté',repos:45,yt:'pallof press',groupe:'reste'}]},
+  1:{nom:'Salle B · Haut',heure:'18h00',ex:[
+   {id:'b_dc',nom:'Développé couché',series:4,reps:'6-8',repos:180,yt:'bench press form',note:'contraste : 3 passes au mur après 20 s',groupe:'ess'},
+   {id:'b_trac',nom:'Tractions',series:4,reps:'6-10',repos:150,yt:'pull up form',groupe:'ess'},
+   {id:'b_mil',nom:'Développé militaire',series:3,reps:'6-8',repos:150,yt:'overhead press form',groupe:'ess'},
+   {id:'b_row',nom:'Rowing barre penché',series:3,reps:'8-10',repos:120,yt:'barbell row form',groupe:'ess'},
+   {id:'b_incl',nom:'Développé incliné haltères',series:3,reps:'10-12',repos:120,yt:'incline dumbbell press',groupe:'reste'},
+   {id:'b_tir',nom:'Tirage vertical prise serrée',series:3,reps:'10-12',repos:90,yt:'close grip lat pulldown',groupe:'reste'},
+   {id:'b_lat',nom:'Élévations latérales',series:3,reps:'12-15',repos:60,yt:'lateral raise form',groupe:'reste'},
+   {id:'b_face',nom:'Face pull',series:3,reps:'15',repos:60,yt:'face pull',groupe:'reste'},
+   {id:'b_curl',nom:'Curl barre + extension triceps',series:3,reps:'10-12',repos:90,yt:'barbell curl triceps pushdown',note:'repos après les 2',groupe:'reste'},
+   {id:'b_dbug',nom:'Dead bug lesté',series:3,reps:'8 / côté',repos:45,yt:'weighted dead bug',groupe:'reste'}]},
+  3:{nom:'Salle C · Explosif',heure:'18h00',ex:[
+   {id:'c_box',nom:'Box jump',series:4,reps:'4',repos:120,yt:'box jump technique',note:'100 %',groupe:'ess'},
+   {id:'c_lanc',nom:'Lancers rotatifs vitesse max',series:3,reps:'6 / côté',repos:120,yt:'med ball rotational throw golf',note:'100 %',groupe:'ess'},
+   {id:'c_trap',nom:'Soulevé de terre trap bar',series:4,reps:'4-5',repos:180,yt:'trap bar deadlift',note:'contraste : 3 sauts max après 20 s',groupe:'ess'},
+   {id:'c_dch',nom:'Développé couché haltères',series:3,reps:'8-10',repos:120,yt:'dumbbell bench press',groupe:'ess'},
+   {id:'c_row',nom:'Rowing un bras',series:3,reps:'10 / côté',repos:90,yt:'one arm dumbbell row',groupe:'ess'},
+   {id:'c_kb',nom:'Kettlebell swing',series:3,reps:'10',repos:90,yt:'kettlebell swing form',groupe:'reste'},
+   {id:'c_hip',nom:'Hip thrust',series:3,reps:'8-10',repos:120,yt:'hip thrust form',groupe:'reste'},
+   {id:'c_step',nom:'Step-up haltères',series:3,reps:'8 / jambe',repos:90,yt:'dumbbell step up',groupe:'reste'},
+   {id:'c_farmer',nom:'Farmer walk lourd',series:3,reps:'30 m',repos:90,yt:'farmer walk',groupe:'reste'},
+   {id:'c_roue',nom:'Roue abdominale',series:3,reps:'8-10',repos:60,yt:'ab wheel rollout',groupe:'reste'}]},
+  4:{nom:'Salle D · Rotation',heure:'17h30',ex:[
+   {id:'d_mb',nom:'Lancers rotatifs médecine-ball',series:5,reps:'4 / côté',repos:120,yt:'med ball rotational throw golf',note:'100 %',groupe:'ess'},
+   {id:'d_land',nom:'Landmine rotation',series:3,reps:'6 / côté',repos:90,yt:'landmine rotation',groupe:'ess'},
+   {id:'d_mil',nom:'Développé militaire un bras',series:3,reps:'8-10 / côté',repos:90,yt:'single arm dumbbell overhead press',groupe:'ess'},
+   {id:'d_cable',nom:'Tirage câble un bras',series:3,reps:'10 / côté',repos:60,yt:'single arm cable row',groupe:'ess'},
+   {id:'d_slam',nom:'Slam médecine-ball',series:3,reps:'5',repos:60,yt:'med ball slam',groupe:'reste'},
+   {id:'d_skater',nom:'Sauts latéraux (skater)',series:3,reps:'5 / côté',repos:60,yt:'skater jumps',groupe:'reste'},
+   {id:'d_dips',nom:'Dips',series:3,reps:'10-12',repos:120,yt:'dips form',groupe:'reste'},
+   {id:'d_wood',nom:'Woodchop au câble',series:3,reps:'10 / côté',repos:60,yt:'cable woodchop',groupe:'reste'},
+   {id:'d_curl',nom:'Curl marteau',series:3,reps:'12',repos:60,yt:'hammer curl',groupe:'reste'},
+   {id:'d_suit',nom:'Suitcase carry',series:3,reps:'30 m / côté',repos:60,yt:'suitcase carry',groupe:'reste'},
+   {id:'d_plank',nom:'Planche latérale',series:2,reps:'40 s / côté',repos:45,yt:'side plank form',groupe:'reste'}]},
  },
  golfRoutine:['Respiration carrée : 4 cycles','Ton intention du jour','Trou 1 : ta cible, un swing','Ta phrase : « Un coup à la fois »'],
  golfPerte:['Énervement après un bogey','Pensé au score','Trop vite sur le tee','Fatigue','Peur du hors-limite','Perdu ma routine'],
@@ -343,7 +412,7 @@ const isChk=(d,id)=>!!(S.checks[K(d)]&&S.checks[K(d)][id]);
 function toggle(d,id){const k=K(d);S.checks[k]=S.checks[k]||{};S.checks[k][id]=!S.checks[k][id];if(!S.checks[k][id])delete S.checks[k][id];save();render();if(S.checks[k]&&S.checks[k][id]){buzz();toast('+10 XP')}}
 function dayPct(d){const h=habOf(d);if(!h.length)return 0;return h.filter(x=>isChk(d,x.id)).length/h.length}
 function streak(id){let n=0,d=NOW();if(!isChk(d,id))d=addD(d,-1);for(let i=0;i<400;i++){const ok=P().habitudes.find(h=>h.id===id);if(ok&&!ok.jours.includes(wd(d))){d=addD(d,-1);continue}if(isChk(d,id)){n++;d=addD(d,-1)}else break}return n}
-function xp(){let x=0;for(const k in S.checks)x+=Object.keys(S.checks[k]).length*10;for(const k in S.logs)x+=S.logs[k].length*5;x+=S.golf.length*30;x+=Object.keys(S.evals).length*40;return x}
+function xp(){let x=0;for(const k in S.checks)x+=Object.keys(S.checks[k]).filter(i=>!i.includes(':')).length*10;for(const k in S.logs)x+=S.logs[k].length*5;x+=S.golf.length*30;x+=Object.keys(S.evals).length*40;return x}
 const NIV=['Réveil','Recrue','Régulier','Discipliné','Solide','Machine','Compétiteur','Bête de compétition','Monstre','Légende'];
 function niveau(){const x=xp();const n=Math.floor(Math.sqrt(x/40));return {n:n+1,x,cur:x-40*n*n,next:40*((n+1)*(n+1))-40*n*n,nom:NIV[Math.min(NIV.length-1,Math.floor(n/2))]}}
 const buzz=()=>{try{navigator.vibrate&&navigator.vibrate(15)}catch(e){}};
@@ -374,6 +443,45 @@ function render(){
 function head(k,t){document.getElementById('kick').textContent=k;document.getElementById('title').textContent=t}
 
 /* ---------- AUJOURD'HUI ---------- */
+/* ---------- PLANNING DE LA JOURNÉE ---------- */
+let OUVERT={};
+const hOf=t=>t.replace(':','h');
+const minOf=t=>{const[a,b]=t.split(':').map(Number);return a*60+b};
+const YTB=q=>`<a class="yt" href="${ytUrl(q)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" aria-label="Voir la démo"><svg viewBox="0 0 10 10"><path d="M2.5 1l6.5 4-6.5 4z" fill="#E6CF9A"/></svg></a>`;
+function planningDu(d){const k=K(d);const p=PL||{};const L=p.dates&&p.dates[k];if(L)return L;const T=(p.semaine||{})[wd(d)]||[];return T.filter(i=>!i.ecole||(p.jusque&&k<=p.jusque))}
+function cocheSub(cle,hab,liste,fait3){const d=NOW(),k=K(d),id='x:'+cle;S.checks[k]=S.checks[k]||{};const c=S.checks[k];if(c[id])delete c[id];else{c[id]=true;buzz()}
+  if(hab){const L=liste.filter(x=>(x.hab||hab)===hab);const pre=cle.split('_')[0];const ok=x=>c['x:'+pre+'_'+x.cle];const tout=L.every(ok)||(fait3&&L.filter(x=>x.top).every(ok));if(tout)c[hab]=true;else delete c[hab]}
+  save();render()}
+function sousListe(pre,liste,hab,fait3){const d=NOW();const q=JSON.stringify(liste).replace(/"/g,'&quot;');return liste.map(x=>{const on=isChk(d,'x:'+pre+'_'+x.cle);return `<div class="sub ${on?'done':''}"><i class="chk ${on?'y':''}" onclick="event.stopPropagation();cocheSub('${pre}_${x.cle}','${x.hab||hab||''}',${q},${fait3?1:0})"></i><div class="t">${esc(x.nom)}${x.top?'<span class="star">flemme</span>':''}<div class="meta">${esc(x.detail||'')}</div></div>${x.yt?YTB(x.yt):''}</div>`}).join('')}
+function listeEx(titre,liste,pre){return `<div class="lab">${esc(titre)}</div>${sousListe(pre,liste)}`}
+function planningHTML(d){
+  const L=planningDu(d),now=d.getHours()*60+d.getMinutes(),p=P();const vus={};
+  if(!L.length)return `<div class="ch"><div class="ic">${I.day}</div><h2>Ton planning</h2></div><div class="empty">Ton planning arrive. Touche ↻ en haut.</div>`;
+  let fPrepa=false;
+  const items=L.map(it=>{
+    const fin=minOf(it.f),deb=minOf(it.d),past=fin<=now,cur=deb<=now&&now<fin;
+    const cle=it.d+it.t;let hab=null,corps='';
+    const ouvert=OUVERT[cle]!==undefined?OUVERT[cle]:(it.k==='soir'||(it.k==='matin'&&now<12*60)||(it.k==='mobilite'));
+    const tog=`onclick="OUVERT['${cle.replace(/'/g,"\\'")}']=${!ouvert};render()"`;
+    if(it.k==='matin'){if(ouvert)corps=sousListe('matin',p.routineMatin)}
+    if(it.k==='soir'){hab='etir';if(ouvert)corps=sousListe('soir',p.etirements,'etir',true)+`<div class="meta" style="margin-top:6px">Soir de flemme : juste les 3 marqués.</div>`+habRow(d,'lecture')+habRow(d,'lumiere',(/lumière (\d+h\d+)/.exec(L.map(x=>x.t).join(' '))||[])[1])}
+    if(it.k==='mobilite'){if(ouvert)corps=sousListe('longue',p.mobiliteLongue)}
+    if(it.k==='salle'){hab='salle';const se=p.seances[wd(d)];if(se&&ouvert)corps=se.ex.filter(e=>e.groupe==='ess').map(e=>`<div class="sub" onclick="event.stopPropagation();startEx('${e.id}')"><div class="t">${esc(e.nom)}<div class="meta">${e.series} × ${esc(e.reps)} · repos ${rest(e.repos)}${lastKg(e.id)?' · dernière fois '+lastKg(e.id):''}</div></div>${YTB(e.yt)}</div>`).join('')+`<div class="meta" style="margin-top:8px"><a style="color:var(--g2);font-weight:600" onclick="event.stopPropagation();go('salle')">Ouvrir le mode salle</a></div>`}
+    if(it.k==='sophro')hab='sophro';
+    if(it.k==='ecran')hab='ecrans';
+    if(it.k==='perso')hab='perso';
+    if(it.k==='golf')hab='golf';
+    if(it.k==='fourche'&&!fPrepa){hab='prepa';fPrepa=true}
+    if(hab&&vus[hab])hab=null;if(hab)vus[hab]=1;
+    const pliable=['matin','soir','salle','mobilite'].includes(it.k);
+    const m=[it.l,it.p,it.note].filter(Boolean).join(' · ');
+    const ck=hab&&habOf(d).some(x=>x.id===hab)?`<i class="chk ${isChk(d,hab)?'y':''}" onclick="event.stopPropagation();toggle(NOW(),'${hab}')"></i>`:'';
+    return `<div class="pl ${past&&!cur?'past':''} ${cur?'now':''}" ${pliable?tog:''}><span class="h">${hOf(it.d)}</span><div class="b"><div class="nm">${esc(it.t)}${pliable?` <span class="mut" style="font-size:12px">${ouvert?'▾':'▸'}</span>`:''}</div>${m?`<div class="meta">${esc(m)}</div>`:''}</div>${ck}${corps?`<div class="c">${corps}</div>`:''}</div>`});
+  const reste=habOf(d).filter(h=>!vus[h.id]&&!['lecture','lumiere','corde','mobilite'].includes(h.id));
+  return `<div class="ch"><div class="ic">${I.day}</div><h2>Ton planning</h2><span class="tm">${JOURS[wd(d)]}</span></div>${items.join('')}${reste.length?`<div class="lab" style="margin-top:16px">À cocher aussi</div>${reste.map(h=>habRow(d,h.id)).join('')}`:''}`;
+}
+function habRow(d,id,det){const h=P().habitudes.find(x=>x.id===id);if(!h)return'';const on=isChk(d,id);return `<div class="sub ${on?'done':''}"><i class="chk ${on?'y':''}" onclick="event.stopPropagation();toggle(NOW(),'${id}')"></i><div class="t">${esc(h.nom)}<div class="meta">${esc(det||h.detail||'')}</div></div></div>`}
+
 function vToday(){
   const n=NOW(),d=n,h=n.getHours();
   const c=chez(d),mp=P().maison[c];
@@ -381,7 +489,7 @@ function vToday(){
   const B=(D&&D.briefing&&D.briefing.date===K(d))?D.briefing:null;
   const F=(D&&D.forme&&D.forme.date===K(d))?D.forme:formeGarmin(d);
   const hab=habOf(d);
-  const sect=(m,titre,ic,tm)=>{const L=hab.filter(x=>x.moment===m);if(!L.length)return'';return `<div class="ch" style="margin-top:${m==='matin'?0:20}px"><div class="ic">${I[ic]}</div><h2>${titre}</h2><span class="tm">${tm}</span></div>`+L.map(x=>`<div class="row ${isChk(d,x.id)?'done':''}" onclick="toggle(NOW(),'${x.id}')"><i class="chk"></i><div style="flex:1"><div class="nm">${esc(x.nom)}</div><div class="meta">${esc(x.detail||'')}</div></div>${x.yt?`<a class="yt" href="${ytUrl(x.yt)}" target="_blank" onclick="event.stopPropagation()">${I.play}</a>`:''}</div>`).join('')};
+  const _sect=(m,titre,ic,tm)=>{const L=hab.filter(x=>x.moment===m);if(!L.length)return'';return `<div class="ch" style="margin-top:${m==='matin'?0:20}px"><div class="ic">${I[ic]}</div><h2>${titre}</h2><span class="tm">${tm}</span></div>`+L.map(x=>`<div class="row ${isChk(d,x.id)?'done':''}" onclick="toggle(NOW(),'${x.id}')"><i class="chk"></i><div style="flex:1"><div class="nm">${esc(x.nom)}</div><div class="meta">${esc(x.detail||'')}</div></div>${x.yt?`<a class="yt" href="${ytUrl(x.yt)}" target="_blank" onclick="event.stopPropagation()">${I.play}</a>`:''}</div>`).join('')};
   const se=P().seances[wd(d)];
   const done=hab.filter(x=>isChk(d,x.id)).length;
   const ech=echeances();
@@ -410,12 +518,7 @@ function vToday(){
         <div class="mut" style="font-size:13px;margin-top:10px">Série corde : <b>${streak('corde')} j</b> · chez ${c} : réveil ${mp.reveil}, départ ${mp.depart}</div></div>
     </div>
     <div class="card">
-      ${sect('matin','Matin','sun','')}
-      ${se?`<div class="ch" style="margin-top:20px"><div class="ic">${I.dumb}</div><h2>Séance · ${esc(se.nom)}</h2><span class="tm">18h00</span></div>
-        ${se.ex.slice(0,3).map(e=>`<div class="row" onclick="startEx('${e.id}')"><div style="flex:1"><div class="nm">${esc(e.nom)}</div><div class="meta">${e.series} × ${esc(e.reps)}${lastKg(e.id)?' · dernière fois '+lastKg(e.id):''}</div></div><span class="pill">Repos ${rest(e.repos)}</span></div>`).join('')}
-        ${se.ex.length>3?`<div class="meta" style="margin:8px 4px">+ ${se.ex.length-3} exercices · <a style="color:var(--g2);font-weight:600" onclick="go('salle')">ouvrir le mode salle</a></div>`:''}`:''}
-      ${sect('jour','Journée','day','')}
-      ${sect('soir','Soir','moon','21h45')}
+      ${planningHTML(d)}
     </div>
     <div class="col">
       <div class="card"><div class="lab">Ton coach Claude</div>
@@ -494,7 +597,7 @@ function vSalle(){
   const n=NOW();let i=wd(n);let se=P().seances[i];
   const autres=Object.keys(P().seances).map(Number);
   if(!se){const nx=autres.find(x=>x>i)??autres[0];se=P().seances[nx];i=nx}
-  head(`Salle · ${JOURS[i]} 18h`,se.nom);
+  head(`Salle · ${JOURS[i]} ${se.heure||'18h00'}`,se.nom);
   const ex=se.ex;if(!CUR||!ex.find(e=>e.id===CUR)){CUR=ex[0].id;const l=lastLog(CUR);KG=l?l.kg:0}
   const e=ex.find(x=>x.id===CUR);if(REPS===null)REPS=parseInt(e.reps)||8;
   const todayLogs=id=>(S.logs[id]||[]).filter(x=>x.d===K(n));
@@ -504,7 +607,7 @@ function vSalle(){
    <div class="card dark">
      <div style="display:flex;justify-content:space-between;align-items:center"><div class="lab" style="color:var(--gold2)">Exercice ${ex.indexOf(e)+1} / ${ex.length}</div><a class="yt" href="${ytUrl(e.yt||e.nom)}" target="_blank" style="width:auto;padding:0 12px;gap:6px;display:flex;color:#E6CF9A;font-size:12px;font-weight:600;height:30px">${I.play} Démo</a></div>
      <div class="serif" style="font-size:34px;margin-top:6px">${esc(e.nom)}</div>
-     <div style="color:#9FB3A8;margin-top:4px">${e.series} × ${esc(e.reps)} · repos ${rest(e.repos)}${lastLog(e.id)?' · dernière fois '+lastKg(e.id)+' × '+lastLog(e.id).reps:''}</div>
+     <div style="color:#9FB3A8;margin-top:4px">${e.series} × ${esc(e.reps)} · repos ${rest(e.repos)}${e.note?' · '+esc(e.note):''}${lastLog(e.id)?' · dernière fois '+lastKg(e.id)+' × '+lastLog(e.id).reps:''}</div>
      <div class="timer" id="timer"></div>
      <div class="grid g2" style="gap:12px">
        <div><div class="lab" style="color:var(--gold2);margin-bottom:6px">Charge</div><div class="step"><button onclick="KG=Math.round((KG-2.5)*10)/10;render()">−</button><div class="v">${kgTxt(CUR,KG)}</div><button onclick="KG=Math.round((KG+2.5)*10)/10;render()">+</button></div></div>
@@ -514,9 +617,9 @@ function vSalle(){
      <button class="btn gold full" onclick="serie()">${fait>=e.series?'Exercice terminé · suivant':'Série faite · lancer le repos'}</button>
      ${prog.length>1?`<div class="lab" style="color:var(--gold2);margin-top:18px">Ta progression</div>${spark(prog)}`:''}
    </div>
-   <div class="card exl"><div class="lab">La séance</div>
-     ${ex.map((x,k)=>{const f=todayLogs(x.id).length;return `<div class="row ${x.id===CUR?'cur':''} ${f>=x.series?'done':''}" onclick="startEx('${x.id}')"><span class="num">${k+1}</span><div style="flex:1"><div class="nm">${esc(x.nom)}</div><div class="meta">${x.series} × ${esc(x.reps)}${lastLog(x.id)?' · '+lastKg(x.id):''} · ${f}/${x.series}</div></div><span class="pill">${rest(x.repos)}</span></div>`}).join('')}
-     <div class="meta" style="margin-top:14px">Programme d'exemple : Claude le remplace par le tien (dis-lui « mets mon programme Bevel »).</div>
+   <div class="card exl">${listeEx('Activation golf · 10 min',P().activation,'act')}<div class="lab" style="margin-top:16px">La séance</div>
+     ${ex.map((x,k)=>{const f=todayLogs(x.id).length;return `${x.groupe&&(!k||ex[k-1].groupe!==x.groupe)?`<div class="lab" style="margin-top:14px;color:var(--g2)">${x.groupe==='reste'?'Le reste · si tu as l\'énergie':'L\'essentiel · jamais sauté'}</div>`:''}<div class="row ${x.id===CUR?'cur':''} ${f>=x.series?'done':''}" onclick="startEx('${x.id}')"><span class="num">${k+1}</span><div style="flex:1"><div class="nm">${esc(x.nom)}</div><div class="meta">${x.series} × ${esc(x.reps)}${lastLog(x.id)?' · '+lastKg(x.id):''} · ${f}/${x.series}</div></div><span class="pill">${rest(x.repos)}</span></div>`}).join('')}
+     ${listeEx('FIN · mobilité 5 min, toujours',P().finSalle,'fin')}
      <button class="btn o full" style="margin-top:12px" onclick="toggle(NOW(),'salle')">${isChk(NOW(),'salle')?'Séance cochée ✓':'Cocher la séance comme faite'}</button>
    </div></div>`;
 }
@@ -636,7 +739,7 @@ async function sendNote(){const t=document.getElementById('s_note').value.trim()
 function sendPhoto(inp,kind){const f=inp.files[0];if(!f)return;const img=new Image();const rd=new FileReader();rd.onload=()=>{img.onload=async()=>{const c=document.createElement('canvas');const sc=Math.min(1,1600/Math.max(img.width,img.height));c.width=img.width*sc;c.height=img.height*sc;c.getContext('2d').drawImage(img,0,0,c.width,c.height);const data=c.toDataURL('image/jpeg',.8).split(',')[1];try{const nm=kind==='repas'?'repas':'journal';await putFile(`inbox/${nm}-${K(NOW())}-${Date.now()}.jpg`,data,kind==='repas'?'Photo de repas':'Journal de classe');if(kind==='repas'){S.repas.push({date:K(NOW()),heure:hm(NOW()),nom:'Photo de repas',attente:1});save();render()}toast(kind==='repas'?'Repas envoyé : Claude compte les calories':'Journal envoyé à Claude')}catch(e){toast(e.message==='nogh'?'Règle GitHub d\'abord (⚙︎)':'Envoi raté, réessaie')}};img.src=rd.result};rd.readAsDataURL(f);inp.value=''}
 
 /* ============ Démarrage ============ */
-if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+if('serviceWorker' in navigator&&location.protocol.startsWith('http')){navigator.serviceWorker.register('sw.js').catch(()=>{})}
 loadData().then(()=>{render();if(S.settings.token&&!DEMO)pull(false)});
 setInterval(()=>{if(TAB!=='salle')theme()},60000);
 window.addEventListener('hashchange',()=>{const t=location.hash.slice(1);if(TABS.find(x=>x[0]===t)&&t!==TAB){TAB=t;render()}});
