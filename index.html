@@ -86,13 +86,13 @@ body.night .tab.on{background:var(--gold);color:#0F3B2E}
 .pl.mini{background:none;padding:6px 12px;margin-top:2px}
 .pl.past{opacity:.5}.pl.now{outline:2.5px solid var(--gold);outline-offset:-2px;opacity:1}
 .pl .h{width:48px;flex:none;font-size:13.5px;font-weight:600;color:var(--g2);padding-top:2px;font-variant-numeric:tabular-nums}
-.pl{flex-wrap:wrap}.pl .b{flex:1;min-width:0}.pl .c{flex:0 0 100%;min-width:0}
+.pl{flex-wrap:wrap}.pl .b{flex:1;min-width:0}.pl .plc{flex:0 0 100%;min-width:0}
 .pl .chk{width:28px;height:28px}.pl .chk:after{left:8px;top:4px}
 .sub{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid rgba(120,140,130,.22)}
 .sub:first-of-type{margin-top:8px}.sub .t{flex:1;min-width:0;font-size:15px}.sub.done .t{text-decoration:line-through;opacity:.6}
 .sub .chk{width:26px;height:26px}.sub .chk:after{left:7.5px;top:3.5px;width:7px;height:12px}
 .sub a.yt{width:44px;height:32px}
-.star{color:#A9832F;font-size:11.5px;font-weight:700;margin-left:6px}
+.flm{color:#A9832F;font-size:11.5px;font-weight:700;margin-left:6px}
 .meta{font-size:12.5px;color:var(--mut);margin-top:2px}
 .pill{margin-left:auto;font-size:12px;font-weight:600;padding:6px 10px;border-radius:999px;background:rgba(201,164,92,.18);color:#8A6A2C;white-space:nowrap}
 body.night .pill{color:var(--gold2)}
@@ -452,7 +452,7 @@ function planningDu(d){const k=K(d);const p=PL||{};const L=p.dates&&p.dates[k];i
 function cocheSub(cle,hab,liste,fait3){const d=NOW(),k=K(d),id='x:'+cle;S.checks[k]=S.checks[k]||{};const c=S.checks[k];if(c[id])delete c[id];else{c[id]=true;buzz()}
   if(hab){const L=liste.filter(x=>(x.hab||hab)===hab);const pre=cle.split('_')[0];const ok=x=>c['x:'+pre+'_'+x.cle];const tout=L.every(ok)||(fait3&&L.filter(x=>x.top).every(ok));if(tout)c[hab]=true;else delete c[hab]}
   save();render()}
-function sousListe(pre,liste,hab,fait3){const d=NOW();const q=JSON.stringify(liste).replace(/"/g,'&quot;');return liste.map(x=>{const on=isChk(d,'x:'+pre+'_'+x.cle);return `<div class="sub ${on?'done':''}"><i class="chk ${on?'y':''}" onclick="event.stopPropagation();cocheSub('${pre}_${x.cle}','${x.hab||hab||''}',${q},${fait3?1:0})"></i><div class="t">${esc(x.nom)}${x.top?'<span class="star">flemme</span>':''}<div class="meta">${esc(x.detail||'')}</div></div>${x.yt?YTB(x.yt):''}</div>`}).join('')}
+function sousListe(pre,liste,hab,fait3){const d=NOW();const q=JSON.stringify(liste).replace(/"/g,'&quot;');return liste.map(x=>{const on=isChk(d,'x:'+pre+'_'+x.cle);return `<div class="sub ${on?'done':''}"><i class="chk ${on?'y':''}" onclick="event.stopPropagation();cocheSub('${pre}_${x.cle}','${x.hab||hab||''}',${q},${fait3?1:0})"></i><div class="t">${esc(x.nom)}${x.top?'<span class="flm">flemme</span>':''}<div class="meta">${esc(x.detail||'')}</div></div>${x.yt?YTB(x.yt):''}</div>`}).join('')}
 function listeEx(titre,liste,pre){return `<div class="lab">${esc(titre)}</div>${sousListe(pre,liste)}`}
 function planningHTML(d){
   const L=planningDu(d),now=d.getHours()*60+d.getMinutes(),p=P();const vus={};
@@ -476,7 +476,7 @@ function planningHTML(d){
     const pliable=['matin','soir','salle','mobilite'].includes(it.k);
     const m=[it.l,it.p,it.note].filter(Boolean).join(' · ');
     const ck=hab&&habOf(d).some(x=>x.id===hab)?`<i class="chk ${isChk(d,hab)?'y':''}" onclick="event.stopPropagation();toggle(NOW(),'${hab}')"></i>`:'';
-    return `<div class="pl ${past&&!cur?'past':''} ${cur?'now':''}" ${pliable?tog:''}><span class="h">${hOf(it.d)}</span><div class="b"><div class="nm">${esc(it.t)}${pliable?` <span class="mut" style="font-size:12px">${ouvert?'▾':'▸'}</span>`:''}</div>${m?`<div class="meta">${esc(m)}</div>`:''}</div>${ck}${corps?`<div class="c">${corps}</div>`:''}</div>`});
+    return `<div class="pl ${past&&!cur?'past':''} ${cur?'now':''}" ${pliable?tog:''}><span class="h">${hOf(it.d)}</span><div class="b"><div class="nm">${esc(it.t)}${pliable?` <span class="mut" style="font-size:12px">${ouvert?'▾':'▸'}</span>`:''}</div>${m?`<div class="meta">${esc(m)}</div>`:''}</div>${ck}${corps?`<div class="plc">${corps}</div>`:''}</div>`});
   const reste=habOf(d).filter(h=>!vus[h.id]&&!['lecture','lumiere','corde','mobilite'].includes(h.id));
   return `<div class="ch"><div class="ic">${I.day}</div><h2>Ton planning</h2><span class="tm">${JOURS[wd(d)]}</span></div>${items.join('')}${reste.length?`<div class="lab" style="margin-top:16px">À cocher aussi</div>${reste.map(h=>habRow(d,h.id)).join('')}`:''}`;
 }
