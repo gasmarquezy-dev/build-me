@@ -2,7 +2,7 @@ name: Garmin
 on:
   workflow_dispatch:
   schedule:
-    - cron: '30 5 * * *'
+    - cron: '0 19 * * *'  # 20h à Bruxelles en hiver (19h UTC) ; en été, mettre '0 18 * * *'
 permissions:
   contents: write
 jobs:

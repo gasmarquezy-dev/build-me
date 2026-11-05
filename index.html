@@ -617,7 +617,7 @@ function vSalle(){
      <div class="serif" style="font-size:34px;margin-top:6px">${esc(e.nom)}</div>
      <div style="color:#9FB3A8;margin-top:4px">${e.series} × ${esc(e.reps)} · repos ${rest(e.repos)}${e.note?' · '+esc(e.note):''}${lastLog(e.id)?' · dernière fois '+lastKg(e.id)+' × '+lastLog(e.id).reps:''}</div>
      <div class="timer" id="timer"></div>
-     <div class="fig">${bonhomme(e)}<div class="figtxt"><div class="lab" style="color:var(--gold2)">Repos</div><div class="serif" style="font-size:30px">${rest(e.repos)}</div><div class="meta" style="color:#9FB3A8">zones : ${zoneOf(e.nom).join(', ')||'tout le corps'}</div></div></div>
+     ${bonhomme(e)}
      <div class="grid g2" style="gap:12px">
        <div><div class="lab" style="color:var(--gold2);margin-bottom:6px">Charge</div><div class="step"><button onclick="KG=Math.max(0,Math.round((KG-1)*10)/10);render()">−</button><div class="v">${kgTxt(CUR,KG)}</div><button onclick="KG=Math.round((KG+1)*10)/10;render()">+</button></div></div>
        <div><div class="lab" style="color:var(--gold2);margin-bottom:6px">Reps · série ${SET}/${e.series}</div><div class="step"><button onclick="REPS=Math.max(1,REPS-1);render()">−</button><div class="v">${REPS}</div><button onclick="REPS++;render()">+</button></div></div>
@@ -632,8 +632,36 @@ function vSalle(){
      <button class="btn o full" style="margin-top:12px" onclick="toggle(NOW(),'salle')">${isChk(NOW(),'salle')?'Séance cochée ✓':'Cocher la séance comme faite'}</button>
    </div></div>`;
 }
-function zoneOf(nom){const n=nom.toLowerCase();const z=[];if(/squat|soulev|fente|presse|leg|mollet|nordic|step|hip|box|saut|jump|farmer|bulgare|skater|kettle|swing/.test(n))z.push('jambes');if(/développé|pec|dips|dip|passe/.test(n))z.push('pecs');if(/trac|rowing|row|tirage|pull|dorsal|lat(?!é|e)/.test(n))z.push('dos');if(/militaire|latérale|épaule|face|slam/.test(n))z.push('epaules');if(/curl|triceps|marteau|extension/.test(n))z.push('bras');if(/planche|plank|roue|dead bug|woodchop|rotat|pallof|lanc|copen|suitcase|landmine|suit/.test(n))z.push('core');return z}
-function bonhomme(e){const z=zoneOf(e.nom);const c=k=>z.includes(k)?'#C9A45C':'rgba(246,242,232,.16)';return `<svg viewBox="0 0 120 230" width="104" height="200" aria-label="Zones travaillées"><circle cx="60" cy="18" r="13" fill="rgba(246,242,232,.2)"/><rect x="34" y="36" width="52" height="14" rx="7" fill="${c('epaules')}"/><rect x="40" y="52" width="40" height="24" rx="9" fill="${c('pecs')}"/><rect x="40" y="78" width="40" height="28" rx="9" fill="${c('dos')}"/><rect x="44" y="108" width="32" height="26" rx="9" fill="${c('core')}"/><rect x="18" y="40" width="13" height="46" rx="6" fill="${c('bras')}"/><rect x="89" y="40" width="13" height="46" rx="6" fill="${c('bras')}"/><rect x="42" y="136" width="15" height="80" rx="7" fill="${c('jambes')}"/><rect x="63" y="136" width="15" height="80" rx="7" fill="${c('jambes')}"/></svg>`}
+const MLABEL={pecs:'pectoraux',delts:'épaules',biceps:'biceps',triceps:'triceps',forearms:'avant-bras',abs:'abdos',obliques:'obliques',quads:'quadriceps',hams:'ischios',glutes:'fessiers',calves:'mollets',lats:'grand dorsal',traps:'trapèzes',lowback:'bas du dos'};
+function musc(nom){const n=nom.toLowerCase();const s=new Set();const R=[[/militaire|latérale|face pull/,['delts']],[/développé|dips?\b|pompe/,['pecs','triceps','delts']],[/squat|presse|fente|bulgare|box|saut|step|skater/,['quads','glutes']],[/soulev|roumain|hip thrust|swing|trap bar|farmer/,['hams','glutes','lowback']],[/nordic|leg curl/,['hams']],[/mollet/,['calves']],[/rowing|row /,['lats','traps','biceps']],[/trac|tirage/,['lats','biceps']],[/curl/,['biceps','forearms']],[/planche|dead bug|pallof|woodchop|roue|copen|suitcase|landmine|rotat|lanc|médecine|slam|kettle/,['abs','obliques']]];R.forEach(([r,ms])=>{if(r.test(n))ms.forEach(m=>s.add(m))});if(/triceps/.test(n))s.add('triceps');if(/farmer|suitcase/.test(n))s.add('forearms');return s}
+const SIL_TORSO='M84 74L116 74Q140 84 150 112L150 190Q150 210 138 214L130 226L70 226L62 214Q50 210 50 190L50 112Q60 84 84 74Z';
+function sil(){return `<g fill="rgba(246,242,232,.13)" stroke="rgba(246,242,232,.28)" stroke-width="1.2"><circle cx="100" cy="36" r="20"/><rect x="92" y="52" width="16" height="24" rx="6"/><path d="${SIL_TORSO}"/><path d="M84 220L82 332L84 430" fill="none" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/><path d="M116 220L118 332L116 430" fill="none" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/><path d="M62 96L54 156L50 218M138 96L146 156L150 218" fill="none" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="80" cy="438" rx="15" ry="7"/><ellipse cx="120" cy="438" rx="15" ry="7"/><circle cx="50" cy="228" r="9"/><circle cx="150" cy="228" r="9"/></g>`}
+function bonhomme(e){
+ const on=musc(e.nom);const c=k=>on.has(k)?'#C9A45C':'rgba(246,242,232,.10)';
+ const M=(k,inner)=>`<g fill="${c(k)}" stroke="rgba(20,35,29,.35)" stroke-width="1">${inner}</g>`;
+ const front=`${sil()}
+ ${M('delts','<path d="M70 92Q56 96 56 116Q62 128 74 124Q80 108 70 92Z"/><path d="M130 92Q144 96 144 116Q138 128 126 124Q120 108 130 92Z"/>')}
+ ${M('pecs','<path d="M98 96Q76 88 70 104Q68 120 82 126Q96 126 99 116Z"/><path d="M102 96Q124 88 130 104Q132 120 118 126Q104 126 101 116Z"/>')}
+ ${M('biceps','<path d="M58 128Q50 146 56 166Q66 168 70 150Q70 132 58 128Z"/><path d="M142 128Q150 146 144 166Q134 168 130 150Q130 132 142 128Z"/>')}
+ ${M('forearms','<path d="M54 170Q48 196 50 212L60 212Q62 192 62 170Z"/><path d="M146 170Q152 196 150 212L140 212Q138 192 138 170Z"/>')}
+ ${M('abs','<rect x="88" y="130" width="11" height="17" rx="4"/><rect x="101" y="130" width="11" height="17" rx="4"/><rect x="87" y="150" width="12" height="18" rx="4"/><rect x="101" y="150" width="12" height="18" rx="4"/><rect x="88" y="171" width="11" height="18" rx="4"/><rect x="101" y="171" width="11" height="18" rx="4"/>')}
+ ${M('obliques','<path d="M74 128Q78 160 72 198L84 196Q86 160 84 128Z"/><path d="M126 128Q122 160 128 198L116 196Q114 160 116 128Z"/>')}
+ ${M('quads','<path d="M70 222Q64 280 74 330L94 330Q100 280 98 222Z"/><path d="M130 222Q136 280 126 330L106 330Q100 280 102 222Z"/>')}
+ <path d="M100 100L100 190" stroke="rgba(20,35,29,.4)" stroke-width="1" fill="none"/>
+ <path d="M68 204Q100 218 132 204" stroke="rgba(20,35,29,.35)" stroke-width="1" fill="none"/>`;
+ const back=`${sil()}
+ ${M('traps','<path d="M100 60L72 82L84 122L100 150L116 122L128 82Z"/>')}
+ ${M('delts','<path d="M70 92Q56 96 56 116Q62 128 74 124Q80 108 70 92Z"/><path d="M130 92Q144 96 144 116Q138 128 126 124Q120 108 130 92Z"/>')}
+ ${M('lats','<path d="M82 112Q70 150 84 188L97 172L95 124Z"/><path d="M118 112Q130 150 116 188L103 172L105 124Z"/>')}
+ ${M('triceps','<path d="M58 128Q50 146 56 166Q66 168 70 150Q70 132 58 128Z"/><path d="M142 128Q150 146 144 166Q134 168 130 150Q130 132 142 128Z"/>')}
+ ${M('forearms','<path d="M54 170Q48 196 50 212L60 212Q62 192 62 170Z"/><path d="M146 170Q152 196 150 212L140 212Q138 192 138 170Z"/>')}
+ ${M('lowback','<path d="M92 128L92 196L100 202L108 196L108 128Z"/>')}
+ ${M('glutes','<path d="M84 206Q100 200 100 216Q100 236 84 236Q68 234 70 218Q74 206 84 206Z"/><path d="M116 206Q100 200 100 216Q100 236 116 236Q132 234 130 218Q126 206 116 206Z"/>')}
+ ${M('hams','<path d="M70 240Q66 290 74 332L94 332Q98 290 96 240Z"/><path d="M130 240Q134 290 126 332L106 332Q102 290 104 240Z"/>')}
+ ${M('calves','<path d="M74 350Q66 384 76 426L94 426Q100 384 94 350Z"/><path d="M126 350Q134 384 124 426L106 426Q100 384 106 350Z"/>')}`;
+ const ztxt=[...on].map(k=>MLABEL[k]).join(', ')||'tout le corps';
+ return `<div class="fig"><svg viewBox="0 0 400 448" width="230" height="258" role="img" aria-label="Muscles travaillés : ${ztxt}"><g>${front}</g><g transform="translate(200 0)">${back}</g></svg><div class="figtxt"><div class="lab" style="color:var(--gold2)">Repos</div><div class="serif" style="font-size:30px">${rest(e.repos)}</div><div class="meta" style="color:#9FB3A8">${ztxt}</div></div></div>`;
+}
 function serie(){
   const n=NOW();const se=Object.values(P().seances).find(s=>s.ex.find(e=>e.id===CUR));const e=se.ex.find(x=>x.id===CUR);
   const fait=(S.logs[CUR]||[]).filter(x=>x.d===K(n)).length;
