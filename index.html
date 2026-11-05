@@ -154,6 +154,7 @@ body.night .step button{background:rgba(255,255,255,.1)}
 .step .v{font-family:var(--serif);font-size:30px;color:var(--g);text-align:center}
 .exl .row.cur{outline:2.5px solid var(--gold);outline-offset:-2px}
 .dots{display:flex;gap:6px;margin-top:6px}
+.fig{display:flex;gap:16px;align-items:center;margin-top:14px}.figtxt{flex:1;min-width:0}
 .dots i{width:10px;height:10px;border-radius:50%;background:rgba(62,125,98,.25)}
 .dots i.y{background:var(--g4)}
 
@@ -344,6 +345,13 @@ const PLAN_DEFAUT={
   {cle:'cars',nom:'Hip CARs debout',detail:'3 / côté',yt:'standing hip CARs'},
   {cle:'pont',nom:'Pont fessier avec élastique',detail:'10',yt:'banded glute bridge'},
   {cle:'sauts',nom:'Sauts verticaux max',detail:'3',yt:'vertical jump technique'},
+ ],
+ mobiliteSalle:[
+  {cle:'cheville',nom:'Mobilité cheville au mur',detail:'8 / côté',yt:'ankle mobility wall drill'},
+  {cle:'cars2',nom:'Hip CARs couché',detail:'3 / côté',yt:'hip CARs lying'},
+  {cle:'adduct',nom:'Rocking adducteurs',detail:'8 / côté',yt:'adductor rockbacks'},
+  {cle:'thor',nom:'Rotation thoracique couché',detail:'8 / côté',yt:'thoracic rotation lying'},
+  {cle:'wgs2',nom:"World's greatest stretch",detail:'4 / côté',yt:'worlds greatest stretch'},
  ],
  finSalle:[
   {cle:'9090',nom:'90/90 tenu',detail:'45 s / côté',yt:'90 90 hip stretch'},
@@ -609,6 +617,7 @@ function vSalle(){
      <div class="serif" style="font-size:34px;margin-top:6px">${esc(e.nom)}</div>
      <div style="color:#9FB3A8;margin-top:4px">${e.series} × ${esc(e.reps)} · repos ${rest(e.repos)}${e.note?' · '+esc(e.note):''}${lastLog(e.id)?' · dernière fois '+lastKg(e.id)+' × '+lastLog(e.id).reps:''}</div>
      <div class="timer" id="timer"></div>
+     <div class="fig">${bonhomme(e)}<div class="figtxt"><div class="lab" style="color:var(--gold2)">Repos</div><div class="serif" style="font-size:30px">${rest(e.repos)}</div><div class="meta" style="color:#9FB3A8">zones : ${zoneOf(e.nom).join(', ')||'tout le corps'}</div></div></div>
      <div class="grid g2" style="gap:12px">
        <div><div class="lab" style="color:var(--gold2);margin-bottom:6px">Charge</div><div class="step"><button onclick="KG=Math.max(0,Math.round((KG-1)*10)/10);render()">−</button><div class="v">${kgTxt(CUR,KG)}</div><button onclick="KG=Math.round((KG+1)*10)/10;render()">+</button></div></div>
        <div><div class="lab" style="color:var(--gold2);margin-bottom:6px">Reps · série ${SET}/${e.series}</div><div class="step"><button onclick="REPS=Math.max(1,REPS-1);render()">−</button><div class="v">${REPS}</div><button onclick="REPS++;render()">+</button></div></div>
@@ -617,12 +626,14 @@ function vSalle(){
      <button class="btn gold full" onclick="serie()">${fait>=e.series?'Exercice terminé · suivant':'Série faite · lancer le repos'}</button>
      ${prog.length>1?`<div class="lab" style="color:var(--gold2);margin-top:18px">Ta progression</div>${spark(prog)}`:''}
    </div>
-   <div class="card exl">${listeEx('Activation golf · 10 min',P().activation,'act')}<div class="lab" style="margin-top:16px">La séance</div>
+   <div class="card exl">${listeEx('Mobilité avant la salle · 5 min',P().mobiliteSalle||[],'msal')}${listeEx('Activation golf · 10 min',P().activation,'act')}<div class="lab" style="margin-top:16px">La séance</div>
      ${ex.map((x,k)=>{const f=todayLogs(x.id).length;return `${x.groupe&&(!k||ex[k-1].groupe!==x.groupe)?`<div class="lab" style="margin-top:14px;color:var(--g2)">${x.groupe==='reste'?'Le reste · si tu as l\'énergie':'L\'essentiel · jamais sauté'}</div>`:''}<div class="row ${x.id===CUR?'cur':''} ${f>=x.series?'done':''}" onclick="startEx('${x.id}')"><span class="num">${k+1}</span><div style="flex:1"><div class="nm">${esc(x.nom)}</div><div class="meta">${x.series} × ${esc(x.reps)}${lastLog(x.id)?' · '+lastKg(x.id):''} · ${f}/${x.series}</div></div><span class="pill">${rest(x.repos)}</span></div>`}).join('')}
      ${listeEx('FIN · mobilité 5 min, toujours',P().finSalle,'fin')}
      <button class="btn o full" style="margin-top:12px" onclick="toggle(NOW(),'salle')">${isChk(NOW(),'salle')?'Séance cochée ✓':'Cocher la séance comme faite'}</button>
    </div></div>`;
 }
+function zoneOf(nom){const n=nom.toLowerCase();const z=[];if(/squat|soulev|fente|presse|leg|mollet|nordic|step|hip|box|saut|jump|farmer|bulgare|skater|kettle|swing/.test(n))z.push('jambes');if(/développé|pec|dips|dip|passe/.test(n))z.push('pecs');if(/trac|rowing|row|tirage|pull|dorsal|lat(?!é|e)/.test(n))z.push('dos');if(/militaire|latérale|épaule|face|slam/.test(n))z.push('epaules');if(/curl|triceps|marteau|extension/.test(n))z.push('bras');if(/planche|plank|roue|dead bug|woodchop|rotat|pallof|lanc|copen|suitcase|landmine|suit/.test(n))z.push('core');return z}
+function bonhomme(e){const z=zoneOf(e.nom);const c=k=>z.includes(k)?'#C9A45C':'rgba(246,242,232,.16)';return `<svg viewBox="0 0 120 230" width="104" height="200" aria-label="Zones travaillées"><circle cx="60" cy="18" r="13" fill="rgba(246,242,232,.2)"/><rect x="34" y="36" width="52" height="14" rx="7" fill="${c('epaules')}"/><rect x="40" y="52" width="40" height="24" rx="9" fill="${c('pecs')}"/><rect x="40" y="78" width="40" height="28" rx="9" fill="${c('dos')}"/><rect x="44" y="108" width="32" height="26" rx="9" fill="${c('core')}"/><rect x="18" y="40" width="13" height="46" rx="6" fill="${c('bras')}"/><rect x="89" y="40" width="13" height="46" rx="6" fill="${c('bras')}"/><rect x="42" y="136" width="15" height="80" rx="7" fill="${c('jambes')}"/><rect x="63" y="136" width="15" height="80" rx="7" fill="${c('jambes')}"/></svg>`}
 function serie(){
   const n=NOW();const se=Object.values(P().seances).find(s=>s.ex.find(e=>e.id===CUR));const e=se.ex.find(x=>x.id===CUR);
   const fait=(S.logs[CUR]||[]).filter(x=>x.d===K(n)).length;

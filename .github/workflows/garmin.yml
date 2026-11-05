@@ -1,0 +1,26 @@
+name: Garmin
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 5 * * *'
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install garminconnect
+      - name: Récupérer les données Garmin
+        env:
+          GARMIN_TOKENS: ${{ secrets.GARMIN_TOKENS }}
+        run: python fetch_garmin.py
+      - name: Enregistrer les données
+        run: |
+          git config user.name "build-me-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add garmin.json garmin-historique.json
+          git diff --cached --quiet || (git commit -m "Garmin : mise à jour" && git push)
