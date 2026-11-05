@@ -610,7 +610,7 @@ function vSalle(){
      <div style="color:#9FB3A8;margin-top:4px">${e.series} × ${esc(e.reps)} · repos ${rest(e.repos)}${e.note?' · '+esc(e.note):''}${lastLog(e.id)?' · dernière fois '+lastKg(e.id)+' × '+lastLog(e.id).reps:''}</div>
      <div class="timer" id="timer"></div>
      <div class="grid g2" style="gap:12px">
-       <div><div class="lab" style="color:var(--gold2);margin-bottom:6px">Charge</div><div class="step"><button onclick="KG=Math.round((KG-2.5)*10)/10;render()">−</button><div class="v">${kgTxt(CUR,KG)}</div><button onclick="KG=Math.round((KG+2.5)*10)/10;render()">+</button></div></div>
+       <div><div class="lab" style="color:var(--gold2);margin-bottom:6px">Charge</div><div class="step"><button onclick="KG=Math.max(0,Math.round((KG-1)*10)/10);render()">−</button><div class="v">${kgTxt(CUR,KG)}</div><button onclick="KG=Math.round((KG+1)*10)/10;render()">+</button></div></div>
        <div><div class="lab" style="color:var(--gold2);margin-bottom:6px">Reps · série ${SET}/${e.series}</div><div class="step"><button onclick="REPS=Math.max(1,REPS-1);render()">−</button><div class="v">${REPS}</div><button onclick="REPS++;render()">+</button></div></div>
      </div>
      <div class="dots" style="justify-content:center;margin:14px 0">${Array.from({length:e.series},(_,k)=>`<i class="${k<fait?'y':''}"></i>`).join('')}</div>
