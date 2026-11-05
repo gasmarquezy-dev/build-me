@@ -306,34 +306,34 @@ async function loadData(){
 const PLAN_DEFAUT={
  maison:{ref:'2026-11-02',refChez:'papa',papa:{depart:'7h30',reveil:'6h30'},maman:{depart:'8h15',reveil:'7h00'}},
  habitudes:[
-  {id:'corde',moment:'matin',nom:'Corde à sauter',detail:'8 min',jours:[0,1,2,3,4]},
-  {id:'mobilite',moment:'matin',nom:'Mobilité golf',detail:'6 min, sans pause',jours:[0,1,2,3,4]},
+  {id:'matin',moment:'matin',nom:'Routine du matin',detail:'12 à 15 min',jours:[0,1,2,3,4]},
   {id:'perso',moment:'matin',nom:'1 h de temps perso',detail:'étudier ou autre',jours:[0,1,2,3,4,5,6]},
   {id:'prepa',moment:'jour',nom:'Prépas en fourche',detail:'tôt dans la journée',jours:[0,1,2,3,4]},
   {id:'salle',moment:'jour',nom:'Salle',detail:'',jours:[0,1,3,4]},
   {id:'golf',moment:'jour',nom:'Travail golf',detail:'contenu : ton coach',jours:[2,5]},
   {id:'ecrans',moment:'soir',nom:'Téléphone coupé',detail:'hors de la chambre',jours:[0,1,2,3,4,5,6]},
-  {id:'sophro',moment:'soir',nom:'Sophrologie',detail:'7 min',jours:[0,1,2,3,4,5,6]},
-  {id:'etir',moment:'soir',nom:'Étirements',detail:'12 min · 1 min / côté',jours:[0,1,2,3,4,5,6]},
+  {id:'soir',moment:'soir',nom:'Routine du soir',detail:'14 à 16 min',jours:[0,1,2,3,4,5,6]},
   {id:'lecture',moment:'soir',nom:'Lecture',detail:'15 min',jours:[0,1,2,3,4,5,6]},
   {id:'lumiere',moment:'soir',nom:'Lumière éteinte',detail:'',jours:[0,1,2,3,4,5,6]},
  ],
  routineMatin:[
-  {cle:'corde',nom:'Corde à sauter',detail:'8 min · lun mer ven : feu · mar jeu : défi',yt:'corde à sauter débutant technique',hab:'corde'},
-  {cle:'pogo',nom:'Pogo jumps',detail:'2 × 10 · repos 30 s',yt:'pogo jumps technique'},
-  {cle:'wgs',nom:"World's greatest stretch",detail:'4 / côté',yt:'worlds greatest stretch',hab:'mobilite'},
-  {cle:'book',nom:'Open book',detail:'6 / côté',yt:'open book thoracic rotation',hab:'mobilite'},
-  {cle:'9090',nom:'90/90',detail:'10 changements',yt:'90 90 hip switch',hab:'mobilite'},
-  {cle:'chat',nom:'Chat-vache',detail:'8 lentes',yt:'cat cow stretch',hab:'mobilite'},
-  {cle:'deadbug',nom:'Dead bug',detail:'8 / côté',yt:'dead bug exercise',hab:'mobilite'},
+  {cle:'marche',nom:'Marche active + balancements des bras',detail:'2 min · bras devant et derrière, puis rotations du buste',yt:'arm swings warm up'},
+  {cle:'corde',nom:'Corde à sauter',detail:'4 × (30 s corde + 30 s marche) · rythme modéré. Mollets sensibles : marche active',yt:'corde à sauter débutant technique'},
+  {cle:'chevilles',nom:'Mobilité des chevilles',detail:'8 / côté · genou vers le mur, talon au sol',yt:'ankle mobility wall drill'},
+  {cle:'fente',nom:'Grande fente avec rotation',detail:'3 / côté · lent, sans forcer',yt:'lunge with rotation thoracic'},
+  {cle:'9090',nom:'90/90 dynamique',detail:'6 changements au total',yt:'90 90 hip switch'},
+  {cle:'glisse',nom:'Glissés des avant-bras au mur',detail:'8 · ne cambre pas le dos',yt:'wall slides forearms'},
+  {cle:'deadbug',nom:'Dead bug',detail:'4 / côté · expire en éloignant bras et jambe',yt:'dead bug exercise'},
  ],
- etirements:[
-  {cle:'psoas',nom:'Fente à genou (psoas)',detail:'1 min / côté',yt:'half kneeling hip flexor stretch',top:1},
-  {cle:'fig4',nom:'Figure 4 couché',detail:'1 min / côté',yt:'figure 4 stretch lying',top:1},
-  {cle:'ischio',nom:'Ischios avec serviette',detail:'1 min / côté',yt:'lying hamstring stretch towel'},
-  {cle:'torsion',nom:'Torsion couché',detail:'1 min / côté',yt:'supine spinal twist',top:1},
-  {cle:'book',nom:'Open book',detail:'8 / côté',yt:'open book thoracic rotation'},
-  {cle:'pecs',nom:'Pecs au cadre de porte',detail:'1 min / côté',yt:'doorway chest stretch'},
+ routineSoir:[
+  {cle:'chat',nom:'Chat-vache',detail:'6 lentes · expire en arrondissant',yt:'cat cow stretch'},
+  {cle:'enfant',nom:"Posture de l'enfant avec déplacement latéral",detail:'20 s / côté',yt:'child pose side shift stretch'},
+  {cle:'book',nom:'Open book',detail:'4 / côté',yt:'open book stretch side lying'},
+  {cle:'psoas',nom:'Fente à genou',detail:'30 s / côté · coussin sous le genou',yt:'half kneeling hip flexor stretch'},
+  {cle:'fig4',nom:'Figure 4 couchée',detail:'30 s / côté',yt:'figure 4 stretch lying'},
+  {cle:'ischio',nom:'Ischios avec serviette',detail:'30 s / côté',yt:'lying hamstring stretch towel'},
+  {cle:'pecs',nom:'Pectoraux au cadre de porte',detail:'30 s / côté',yt:'doorway chest stretch'},
+  {cle:'sophro',nom:'Sophrologie',detail:"7 min · assis ou allongé, puis éteins l'écran"},
  ],
  mobiliteLongue:[
   {cle:'yoga',nom:'Yoga pour golfeurs',detail:'30 min · toujours la même vidéo',yt:'yoga for golfers 30 minutes'},
@@ -471,8 +471,8 @@ function planningHTML(d){
     const cle=it.d+it.t;let hab=null,corps='';
     const ouvert=OUVERT[cle]!==undefined?OUVERT[cle]:(it.k==='soir'||(it.k==='matin'&&now<12*60)||(it.k==='mobilite'));
     const tog=`onclick="OUVERT['${cle.replace(/'/g,"\\'")}']=${!ouvert};render()"`;
-    if(it.k==='matin'){if(ouvert)corps=sousListe('matin',p.routineMatin)}
-    if(it.k==='soir'){hab='etir';if(ouvert)corps=sousListe('soir',p.etirements,'etir',true)+`<div class="meta" style="margin-top:6px">Soir de flemme : juste les 3 marqués.</div>`+habRow(d,'lecture')+habRow(d,'lumiere',(/lumière (\d+h\d+)/.exec(L.map(x=>x.t).join(' '))||[])[1])}
+    if(it.k==='matin'){hab='matin';if(ouvert)corps=sousListe('matin',routineDu('matin',d),'matin')+runBtn('matin')}
+    if(it.k==='soir'){hab='soir';if(ouvert)corps=(isChk(d,'salle')?`<div class="meta" style="margin-bottom:6px">Séance de salle faite : ta mobilité est déjà faite, juste la sophrologie.</div>`:'')+sousListe('soir',routineDu('soir',d),'soir')+runBtn('soir')+habRow(d,'lecture')+habRow(d,'lumiere',(/lumière (\d+h\d+)/.exec(L.map(x=>x.t).join(' '))||[])[1])}
     if(it.k==='mobilite'){if(ouvert)corps=sousListe('longue',p.mobiliteLongue)}
     if(it.k==='salle'){hab='salle';const se=p.seances[wd(d)];if(se&&ouvert)corps=se.ex.filter(e=>e.groupe==='ess').map(e=>`<div class="sub" onclick="event.stopPropagation();startEx('${e.id}')"><div class="t">${esc(e.nom)}<div class="meta">${e.series} × ${esc(e.reps)} · repos ${rest(e.repos)}${lastKg(e.id)?' · dernière fois '+lastKg(e.id):''}</div></div>${YTB(e.yt)}</div>`).join('')+`<div class="meta" style="margin-top:8px"><a style="color:var(--g2);font-weight:600" onclick="event.stopPropagation();go('salle')">Ouvrir le mode salle</a></div>`}
     if(it.k==='sophro')hab='sophro';
@@ -485,10 +485,18 @@ function planningHTML(d){
     const m=[it.l,it.p,it.note].filter(Boolean).join(' · ');
     const ck=hab&&habOf(d).some(x=>x.id===hab)?`<i class="chk ${isChk(d,hab)?'y':''}" onclick="event.stopPropagation();toggle(NOW(),'${hab}')"></i>`:'';
     return `<div class="pl ${past&&!cur?'past':''} ${cur?'now':''}" ${pliable?tog:''}><span class="h">${hOf(it.d)}</span><div class="b"><div class="nm">${esc(it.t)}${pliable?` <span class="mut" style="font-size:12px">${ouvert?'▾':'▸'}</span>`:''}</div>${m?`<div class="meta">${esc(m)}</div>`:''}</div>${ck}${corps?`<div class="plc">${corps}</div>`:''}</div>`});
-  const reste=habOf(d).filter(h=>!vus[h.id]&&!['lecture','lumiere','corde','mobilite'].includes(h.id));
+  const reste=habOf(d).filter(h=>!vus[h.id]&&!['lecture','lumiere'].includes(h.id));
   return `<div class="ch"><div class="ic">${I.day}</div><h2>Ton planning</h2><span class="tm">${JOURS[wd(d)]}</span></div>${items.join('')}${reste.length?`<div class="lab" style="margin-top:16px">À cocher aussi</div>${reste.map(h=>habRow(d,h.id)).join('')}`:''}`;
 }
 function habRow(d,id,det){const h=P().habitudes.find(x=>x.id===id);if(!h)return'';const on=isChk(d,id);return `<div class="sub ${on?'done':''}"><i class="chk ${on?'y':''}" onclick="event.stopPropagation();toggle(NOW(),'${id}')"></i><div class="t">${esc(h.nom)}<div class="meta">${esc(det||h.detail||'')}</div></div></div>`}
+
+let SEANCE=null,RUN=null;
+const routineDu=(k,d)=>{const p=P();if(k==='matin')return p.routineMatin;return isChk(d,'salle')?p.routineSoir.filter(x=>x.cle==='sophro'):p.routineSoir};
+const runBtn=k=>`<button class="btn gold full" style="margin-top:12px" onclick="event.stopPropagation();startRun('${k}')">Commencer la séance du ${k}</button>`;
+function startRun(k){RUN={k,i:0};render();window.scrollTo({top:0,behavior:'smooth'})}
+function runFait(){const d=NOW(),k=RUN.k,L=routineDu(k,d);const c=(S.checks[K(d)]=S.checks[K(d)]||{});c['x:'+k+'_'+L[RUN.i].cle]=true;buzz();let nx=RUN.i+1;while(nx<L.length&&c['x:'+k+'_'+L[nx].cle])nx++;if(nx>=L.length){if(L.every(x=>c['x:'+k+'_'+x.cle]))c[k]=true;RUN=null;toast('Séance terminée · +10 XP')}else RUN.i=nx;save();render()}
+function runHTML(){const d=NOW(),L=routineDu(RUN.k,d),x=L[RUN.i];if(!x){RUN=null;return''}return `<div class="card dark" style="margin-bottom:18px"><div style="display:flex;justify-content:space-between;align-items:center"><div class="lab" style="color:var(--gold2)">Séance du ${RUN.k} · ${RUN.i+1} / ${L.length}</div><a style="color:#9FB3A8;cursor:pointer;font-size:13px" onclick="RUN=null;render()">Quitter</a></div><div class="serif" style="font-size:30px;margin-top:8px">${esc(x.nom)}</div><div style="color:#9FB3A8;margin-top:4px">${esc(x.detail||'')}</div>${x.yt?`<a class="btn o full" style="margin-top:14px;display:flex;justify-content:center" href="${ytUrl(x.yt)}" target="_blank" rel="noopener">Voir la démo</a>`:''}<button class="btn gold full" style="margin-top:14px" onclick="runFait()">Fait · suivant</button></div>`}
+function pickSeance(j){SEANCE=j;CUR=null;REPS=null;render()}
 
 function vToday(){
   const n=NOW(),d=n,h=n.getHours();
@@ -504,6 +512,7 @@ function vToday(){
   const coach=(D&&D.coach)||[];
   const wave=Array.from({length:60},(_,i)=>`<i style="height:${8+Math.abs(Math.sin(i*.7)*Math.cos(i*.23))*28}px"></i>`).join('');
   return `
+  ${RUN?runHTML():''}
   <div class="card dark hero" style="margin-bottom:18px">
     <div class="kick" style="color:var(--gold2)">Le briefing de Clément</div>
     <div class="hi">${h<12?'Bonjour':h<18?'Salut':'Bonsoir'} Gaspard, il est ${hm(n)}.</div>
@@ -523,7 +532,7 @@ function vToday(){
       <div class="card"><div class="lab">Échéances</div>${ech.length?ech.slice(0,5).map(e=>`<div class="jx"><span>${esc(e.nom)}</span><b class="${e.j<=2?'hot':''}">${e.j===0?'Auj.':'J-'+e.j}</b></div>`).join(''):'<div class="empty">Envoie ton journal de classe : Claude ajoutera tes interros ici.</div>'}
         <button class="btn o" style="margin-top:12px;width:100%" onclick="document.getElementById('cam').click()">${I.cam.replace('#E6CF9A','currentColor')} Journal de classe</button></div>
       <div class="card"><div class="lab">Journée cochée</div><div class="big" style="font-size:38px;margin:8px 0 10px">${done} / ${hab.length}</div><div class="bar"><i style="width:${hab.length?done/hab.length*100:0}%"></i></div>
-        <div class="mut" style="font-size:13px;margin-top:10px">Série corde : <b>${streak('corde')} j</b> · chez ${c} : réveil ${mp.reveil}, départ ${mp.depart}</div></div>
+        <div class="mut" style="font-size:13px;margin-top:10px">Série corde : <b>${streak('matin')} j</b> · chez ${c} : réveil ${mp.reveil}, départ ${mp.depart}</div></div>
     </div>
     <div class="card">
       ${planningHTML(d)}
@@ -589,7 +598,7 @@ function vSemaine(){
    <div class="col">
     <div class="card" style="display:flex;gap:18px;align-items:center">${ring(pct/100,pct+'%',116)}<div><div class="lab">Semaine</div><div style="font-size:15px;margin-top:6px;line-height:1.5">${ok} cases sur ${tot}${prev!==null?`<br><b style="color:${pct-prev>=0?'var(--g2)':'var(--orange)'}">${pct-prev>=0?'+':''}${pct-prev} % vs semaine passée</b>`:''}</div></div></div>
     <div class="card"><div class="lab">Sommeil (Garmin)</div>${sl.length?`<div style="display:flex;align-items:baseline;gap:10px;margin:8px 0 6px"><span class="big">${esc(moy)}</span><span class="mut">moyenne</span></div>${spark(sl.map(x=>x.min))}`:'<div class="empty">Claude remplit ton sommeil chaque matin depuis ta Garmin.</div>'}</div>
-    <div class="card"><div class="lab">Séries en cours</div>${['corde','sophro','etir','ecrans'].map(id=>{const h=H.find(x=>x.id===id);return h?`<div class="jx"><span>${esc(h.nom)}</span><b>${streak(id)} j</b></div>`:''}).join('')}</div>
+    <div class="card"><div class="lab">Séries en cours</div>${['matin','soir','ecrans'].map(id=>{const h=H.find(x=>x.id===id);return h?`<div class="jx"><span>${esc(h.nom)}</span><b>${streak(id)} j</b></div>`:''}).join('')}</div>
    </div></div>`;
 }
 function spark(v){if(v.length<2)return'';const mx=Math.max(...v),mn=Math.min(...v);const W=300,H=80;const pts=v.map((x,i)=>`${i*W/(v.length-1)},${H-8-(x-mn)/(mx-mn||1)*(H-16)}`).join(' ');return `<svg class="spk" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><polyline vector-effect="non-scaling-stroke" fill="none" stroke="#C9A45C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="${pts}"/></svg>`}
@@ -602,16 +611,17 @@ function kgTxt(id,kg){return (LEST(id)&&kg>0?'+':'')+String(kg).replace('.',',')
 function lastKg(id){const l=lastLog(id);return l?kgTxt(id,l.kg):''}
 function startEx(id){CUR=id;SET=1;const l=lastLog(id);KG=l?l.kg:0;REPS=null;if(TAB!=='salle')go('salle');else render()}
 function vSalle(){
-  const n=NOW();let i=wd(n);let se=P().seances[i];
+  const n=NOW();let i=SEANCE!==null?SEANCE:wd(n);let se=P().seances[i];
   const autres=Object.keys(P().seances).map(Number);
   if(!se){const nx=autres.find(x=>x>i)??autres[0];se=P().seances[nx];i=nx}
+  const choix=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">${autres.map(j=>`<button class="btn ${j===i?'gold':'o'}" onclick="pickSeance(${j})">${JOURS[j].slice(0,3)} · ${esc(P().seances[j].nom)}</button>`).join('')}</div>`;
   head(`Salle · ${JOURS[i]} ${se.heure||'18h00'}`,se.nom);
   const ex=se.ex;if(!CUR||!ex.find(e=>e.id===CUR)){CUR=ex[0].id;const l=lastLog(CUR);KG=l?l.kg:0}
   const e=ex.find(x=>x.id===CUR);if(REPS===null)REPS=parseInt(e.reps)||8;
   const todayLogs=id=>(S.logs[id]||[]).filter(x=>x.d===K(n));
   const fait=todayLogs(e.id).length;SET=Math.min(fait+1,e.series);
   const prog=(S.logs[e.id]||[]).slice(-12).map(x=>x.kg);
-  return `<div class="grid g21">
+  return `${choix}<div class="grid g21">
    <div class="card dark">
      <div style="display:flex;justify-content:space-between;align-items:center"><div class="lab" style="color:var(--gold2)">Exercice ${ex.indexOf(e)+1} / ${ex.length}</div><a class="yt" href="${ytUrl(e.yt||e.nom)}" target="_blank" style="width:auto;padding:0 12px;gap:6px;display:flex;color:#E6CF9A;font-size:12px;font-weight:600;height:30px">${I.play} Démo</a></div>
      <div class="serif" style="font-size:34px;margin-top:6px">${esc(e.nom)}</div>
