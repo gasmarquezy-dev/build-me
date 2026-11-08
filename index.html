@@ -292,8 +292,6 @@ async function ghRaw(path){const s=S.settings;const r=await fetch(`https://api.g
 async function loadData(){
   if(!DEMO&&S.settings.token&&S.settings.repo){
     try{D=await ghRaw('data.json');localStorage.setItem('bm-data',JSON.stringify(D))}catch(e){try{D=JSON.parse(localStorage.getItem('bm-data'))}catch(_){}}
-    try{GA=await ghRaw('garmin.json');localStorage.setItem('bm-garmin',JSON.stringify(GA))}catch(e){try{GA=JSON.parse(localStorage.getItem('bm-garmin'))}catch(_){}}
-    try{HIST=await ghRaw('garmin-historique.json');localStorage.setItem('bm-hist',JSON.stringify(HIST))}catch(e){try{HIST=JSON.parse(localStorage.getItem('bm-hist'))||{}}catch(_){}}
     try{PL=await ghRaw('planning.json');localStorage.setItem('bm-planning',JSON.stringify(PL))}catch(e){try{PL=JSON.parse(localStorage.getItem('bm-planning'))}catch(_){}}
     D=D||{};return;
   }
@@ -562,13 +560,8 @@ function nutrition(){const R=repasDuJour();const kcal=R.reduce((a,r)=>a+(+r.kcal
 async function refreshAll(){
   const b=document.getElementById('rfbtn');b.classList.add('spin');
   const s=S.settings;
-  if(!DEMO&&s.token&&s.repo){
-    const avant=GA&&GA.updatedAt;
-    try{await fetch(`https://api.github.com/repos/${s.repo}/actions/workflows/garmin.yml/dispatches`,{method:'POST',headers:{Authorization:'Bearer '+s.token,Accept:'application/vnd.github+json'},body:JSON.stringify({ref:'main'})});toast('Je vais chercher ta montre…')}catch(e){}
-    for(let i=0;i<14;i++){await new Promise(r=>setTimeout(r,10000));await loadData();if(GA&&GA.updatedAt!==avant)break}
-    await pull(false);
-  }else{await loadData()}
-  b.classList.remove('spin');render();toast(GA&&GA.date===K(NOW())?'Garmin à jour':'Rafraîchi');
+  if(!DEMO&&s.token&&s.repo){await pull(false)}else{await loadData()}
+  b.classList.remove('spin');render();toast('Rafraîchi');
 }
 function ring(p,txt,s=110,col='#1F5C45'){const r=50,C=2*Math.PI*r;return `<svg width="${s}" height="${s}" viewBox="0 0 120 120"><circle cx="60" cy="60" r="${r}" fill="none" stroke="rgba(127,140,130,.18)" stroke-width="11"/><circle cx="60" cy="60" r="${r}" fill="none" stroke="${col}" stroke-width="11" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-Math.max(0,Math.min(1,p)))}" transform="rotate(-90 60 60)" style="transition:stroke-dashoffset .6s"/><text x="60" y="69" text-anchor="middle" font-family="Lora,Georgia,serif" font-size="30" fill="currentColor" style="color:var(--g)">${txt}</text></svg>`}
 function echeances(){return ((D&&D.echeances)||[]).map(e=>Object.assign({},e,{j:daysTo(e.date)})).filter(e=>e.j>=0).sort((a,b)=>a.j-b.j)}
@@ -597,7 +590,7 @@ function vSemaine(){
    <div class="card" style="overflow-x:auto"><table><tr><th style="text-align:left;width:34%"></th>${days.map(d=>`<th class="${K(d)===today?'today':''}"><span>${JOURS[wd(d)].slice(0,3)}${K(d)===today?' '+d.getDate():''}</span></th>`).join('')}<th>%</th></tr>${body}</table></div>
    <div class="col">
     <div class="card" style="display:flex;gap:18px;align-items:center">${ring(pct/100,pct+'%',116)}<div><div class="lab">Semaine</div><div style="font-size:15px;margin-top:6px;line-height:1.5">${ok} cases sur ${tot}${prev!==null?`<br><b style="color:${pct-prev>=0?'var(--g2)':'var(--orange)'}">${pct-prev>=0?'+':''}${pct-prev} % vs semaine passée</b>`:''}</div></div></div>
-    <div class="card"><div class="lab">Sommeil (Garmin)</div>${sl.length?`<div style="display:flex;align-items:baseline;gap:10px;margin:8px 0 6px"><span class="big">${esc(moy)}</span><span class="mut">moyenne</span></div>${spark(sl.map(x=>x.min))}`:'<div class="empty">Claude remplit ton sommeil chaque matin depuis ta Garmin.</div>'}</div>
+    <div class="card"><div class="lab">Sommeil</div>${sl.length?`<div style="display:flex;align-items:baseline;gap:10px;margin:8px 0 6px"><span class="big">${esc(moy)}</span><span class="mut">moyenne</span></div>${spark(sl.map(x=>x.min))}`:'<div class="empty">Ton sommeil s’affichera ici.</div>'}</div>
     <div class="card"><div class="lab">Séries en cours</div>${['matin','soir','ecrans'].map(id=>{const h=H.find(x=>x.id===id);return h?`<div class="jx"><span>${esc(h.nom)}</span><b>${streak(id)} j</b></div>`:''}).join('')}</div>
    </div></div>`;
 }
