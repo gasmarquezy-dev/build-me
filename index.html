@@ -220,6 +220,17 @@ body.night #sheet .in{background:#14231D;color:#EDE6D3}
   .ev{grid-template-columns:1fr repeat(5,36px)}.dot{width:32px;height:32px}
 }
 @media (min-width:761px){#tabbar{display:none}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.card{animation:fadeUp .35s ease both}
+.row{transition:transform .15s ease,background .2s ease}
+.row:active{transform:scale(.985)}
+.sessbar{height:8px;border-radius:99px;background:rgba(62,125,98,.2);overflow:hidden;margin:6px 0 4px}
+.sessbar div{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--g4),var(--gold2));transition:width .5s ease}
+.timer.urgent svg{animation:urgent 1s ease-in-out infinite}
+@keyframes urgent{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+.restbtns{display:flex;gap:8px;justify-content:center;margin:-4px 0 10px}
+.restbtns button{border:1px solid rgba(201,164,92,.5);background:transparent;color:var(--gold2);border-radius:99px;padding:6px 14px;font-weight:600;font-size:13px;cursor:pointer}
+.restbtns button:active{transform:scale(.96)}
 </style>
 </head>
 <body>
@@ -614,7 +625,8 @@ function vSalle(){
   const todayLogs=id=>(S.logs[id]||[]).filter(x=>x.d===K(n));
   const fait=todayLogs(e.id).length;SET=Math.min(fait+1,e.series);
   const prog=(S.logs[e.id]||[]).slice(-12).map(x=>x.kg);
-  return `${choix}<div class="grid g21">
+  const doneEx=ex.filter(x=>todayLogs(x.id).length>=x.series).length;
+  return `${choix}<div class="sessbar"><div style="width:${Math.round(doneEx/ex.length*100)}%"></div></div><div class="meta" style="margin-bottom:12px">${doneEx} / ${ex.length} exercices faits aujourd'hui</div><div class="grid g21">
    <div class="card dark">
      <div style="display:flex;justify-content:space-between;align-items:center"><div class="lab" style="color:var(--gold2)">Exercice ${ex.indexOf(e)+1} / ${ex.length}</div><a class="yt" href="${ytUrl(e.yt||e.nom)}" target="_blank" style="width:auto;padding:0 12px;gap:6px;display:flex;color:#E6CF9A;font-size:12px;font-weight:600;height:30px">${I.play} Démo</a></div>
      <div class="serif" style="font-size:34px;margin-top:6px">${esc(e.nom)}</div>
@@ -672,11 +684,15 @@ function serie(){
   S.logs[CUR]=S.logs[CUR]||[];S.logs[CUR].push({d:K(n),kg:KG,reps:REPS});save();buzz();
   REST=e.repos;RESTEND=Date.now()+e.repos*1000;render();
 }
+function beep(){try{const a=new (window.AudioContext||window.webkitAudioContext)();[0,.25].forEach((t,i)=>{const o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=i?1100:880;g.gain.setValueAtTime(.18,a.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+t+.2);o.start(a.currentTime+t);o.stop(a.currentTime+t+.22)})}catch(e){}}
+function addRest(sec){if(!REST)return;RESTEND+=sec*1000;REST+=sec;buzz();tickTimer()}
+function skipRest(){RESTEND=Date.now();tickTimer()}
 function tickTimer(){
   const el=document.getElementById('timer');if(!el)return;clearTimeout(TT);
   const left=Math.max(0,Math.round((RESTEND-Date.now())/1000));const p=REST?left/REST:0;const r=86,C=2*Math.PI*r;
-  el.innerHTML=`<svg width="190" height="190" viewBox="0 0 200 200"><circle cx="100" cy="100" r="${r}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="12"/><circle cx="100" cy="100" r="${r}" fill="none" stroke="#C9A45C" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-p)}" transform="rotate(-90 100 100)"/><text x="100" y="104" text-anchor="middle" font-family="Lora,Georgia,serif" font-size="46" fill="#F6F2E8">${Math.floor(left/60)}:${pad(left%60)}</text><text x="100" y="134" text-anchor="middle" font-family="Inter,sans-serif" font-size="14" fill="#9FB3A8">${left?'repos':'prêt'}</text></svg>`;
-  if(left>0)TT=setTimeout(tickTimer,500);else if(REST){REST=0;try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}toast('Repos fini · à toi')}
+  el.classList.toggle('urgent',left>0&&left<=5);
+  el.innerHTML=`<div style="width:100%"><div style="display:flex;justify-content:center"><svg width="190" height="190" viewBox="0 0 200 200"><circle cx="100" cy="100" r="${r}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="12"/><circle cx="100" cy="100" r="${r}" fill="none" stroke="#C9A45C" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-p)}" transform="rotate(-90 100 100)"/><text x="100" y="104" text-anchor="middle" font-family="Lora,Georgia,serif" font-size="46" fill="#F6F2E8">${Math.floor(left/60)}:${pad(left%60)}</text><text x="100" y="134" text-anchor="middle" font-family="Inter,sans-serif" font-size="14" fill="#9FB3A8">${left?'repos':'prêt'}</text></svg></div>${REST&&left>0?`<div class="restbtns"><button onclick="addRest(15)">+15 s</button><button onclick="skipRest()">Passer</button></div>`:''}</div>`;
+  if(left>0)TT=setTimeout(tickTimer,500);else if(REST){REST=0;beep();try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}toast('Repos fini · à toi')}
 }
 
 /* ---------- GOLF MENTAL ---------- */
