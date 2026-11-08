@@ -72,6 +72,9 @@ h2{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute
 .done-msg b{font-size:30px;font-weight:400;display:block;margin-bottom:6px}
 @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.days{display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;margin-bottom:10px}
+.days button{flex:none;min-width:52px;padding:9px 0;border:1px solid var(--line);background:var(--paper);font:inherit;color:var(--ink);border-radius:4px;cursor:pointer}
+.days button.on{background:var(--g);color:#F6F2E8;border-color:var(--g)}
 </style>
 </head>
 <body>
@@ -125,6 +128,26 @@ h2{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute
   <p class="goal-meta" id="goalCount">Les cases se gardent sur cet appareil.</p>
 
 </div>
+
+
+  <h2>Ma semaine type</h2>
+  <div class="days" id="days"></div>
+  <div class="card" id="dayView"></div>
+  <script>
+  const SEMAINE=[{"j": "Lun", "items": [{"h": "06:20", "t": "Heure perso", "ecole": true}, {"h": "06:30", "t": "Routine du matin", "ecole": true}, {"h": "08:30", "t": "Religion", "ecole": true}, {"h": "09:20", "t": "Maths", "ecole": true}, {"h": "11:20", "t": "Anglais", "ecole": true}, {"h": "12:10", "t": "Fourche", "ecole": true}, {"h": "13:00", "t": "Pause de midi", "ecole": true}, {"h": "13:55", "t": "AC renfort maths", "ecole": true}, {"h": "14:45", "t": "Géographie", "ecole": true}, {"h": "15:35", "t": "Religion", "ecole": true}, {"h": "16:25", "t": "Étude dirigée", "ecole": true}, {"h": "21:35", "t": "Sophrologie", "ecole": true}, {"h": "21:45", "t": "Routine du soir", "ecole": true}]}, {"j": "Mar", "items": [{"h": "06:20", "t": "Heure perso", "ecole": true}, {"h": "06:30", "t": "Routine du matin", "ecole": true}, {"h": "08:30", "t": "Anglais", "ecole": true}, {"h": "10:10", "t": "Histoire", "ecole": true}, {"h": "11:20", "t": "Français", "ecole": true}, {"h": "13:00", "t": "Pause de midi", "ecole": true}, {"h": "13:55", "t": "Éducation physique", "ecole": true}, {"h": "15:35", "t": "Étude dirigée", "ecole": true}, {"h": "21:35", "t": "Sophrologie", "ecole": true}, {"h": "21:45", "t": "Routine du soir", "ecole": true}]}, {"j": "Mer", "items": [{"h": "06:20", "t": "Heure perso", "ecole": true}, {"h": "06:30", "t": "Routine du matin", "ecole": true}, {"h": "09:20", "t": "Maths", "ecole": true}, {"h": "11:20", "t": "Néerlandais", "ecole": true}, {"h": "13:00", "t": "Étude dirigée", "ecole": true}, {"h": "15:15", "t": "SuperSpeed", "ecole": true}, {"h": "21:35", "t": "Sophrologie", "ecole": true}, {"h": "21:45", "t": "Routine du soir", "ecole": true}]}, {"j": "Jeu", "items": [{"h": "06:20", "t": "Heure perso", "ecole": true}, {"h": "06:30", "t": "Routine du matin", "ecole": true}, {"h": "08:30", "t": "AC renfort maths", "ecole": true}, {"h": "09:20", "t": "Français", "ecole": true}, {"h": "11:20", "t": "Maths", "ecole": true}, {"h": "13:00", "t": "Pause de midi", "ecole": true}, {"h": "13:55", "t": "Sciences", "ecole": true}, {"h": "14:45", "t": "Anglais", "ecole": true}, {"h": "15:35", "t": "Étude dirigée", "ecole": true}, {"h": "21:35", "t": "Sophrologie", "ecole": true}, {"h": "21:45", "t": "Routine du soir", "ecole": true}]}, {"j": "Ven", "items": [{"h": "06:20", "t": "Heure perso", "ecole": true}, {"h": "06:30", "t": "Routine du matin", "ecole": true}, {"h": "08:30", "t": "Géographie", "ecole": true}, {"h": "09:20", "t": "Fourche", "ecole": true}, {"h": "10:10", "t": "Néerlandais", "ecole": true}, {"h": "11:20", "t": "Néerlandais", "ecole": true}, {"h": "12:10", "t": "Fourche", "ecole": true}, {"h": "13:00", "t": "Pause de midi", "ecole": true}, {"h": "13:55", "t": "Sciences", "ecole": true}, {"h": "15:35", "t": "Histoire", "ecole": true}, {"h": "16:25", "t": "Étude dirigée", "ecole": true}, {"h": "21:35", "t": "Sophrologie", "ecole": true}, {"h": "21:45", "t": "Routine du soir", "ecole": true}]}, {"j": "Sam", "items": [{"h": "08:30", "t": "Prépa mathématiques", "ecole": true}, {"h": "13:30", "t": "Golf", "ecole": true}, {"h": "13:30", "t": "SuperSpeed", "ecole": true}, {"h": "21:35", "t": "Sophrologie", "ecole": true}, {"h": "21:45", "t": "Routine du soir", "ecole": true}]}, {"j": "Dim", "items": [{"h": "17:15", "t": "Mobilité longue (30 min)", "ecole": true}, {"h": "18:00", "t": "Bilan du dimanche", "ecole": true}, {"h": "21:35", "t": "Sophrologie", "ecole": true}, {"h": "21:45", "t": "Routine du soir", "ecole": true}]}];
+  (function(){
+    const dv=document.getElementById('dayView'),dd=document.getElementById('days');
+    const today=(new Date().getDay()+6)%7;
+    function show(i){
+      [...dd.children].forEach((b,k)=>b.classList.toggle('on',k===i));
+      const d=SEMAINE[i];
+      if(!d){dv.innerHTML='';return}
+      dv.innerHTML='<ul class="tl">'+d.items.map(x=>`<li><span class="h">${x.h}</span><div><b>${x.t}</b></div></li>`).join('')+'</ul>';
+    }
+    SEMAINE.forEach((d,i)=>{const b=document.createElement('button');b.type='button';b.textContent=d.j;b.onclick=()=>show(i);dd.appendChild(b)});
+    show(today);
+  })();
+  </script>
 
 <!-- Séance d'étirements guidée -->
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Séance d'étirements">
